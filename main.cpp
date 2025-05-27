@@ -59,38 +59,45 @@ int main() {
             
             pajaro.figura.setPosition(nuevaPos);
             
-            sf::Vector2f velocidadInicial = (POS_RESORTERA - nuevaPos) * FUERZA_MULTIPLICADOR;
-            trayectoria = Physics::calcularTrayectoria(nuevaPos, velocidadInicial);
+            trayectoria = Physics::calcularTrayectoria(
+                nuevaPos, 
+                (POS_RESORTERA - nuevaPos) * FUERZA_MULTIPLICADOR,
+                0.0015f,  // Densidad del aire
+                0.08f     // Área transversal
+            );
         }
 
         if(pajaro.lanzado) {
             pajaro.updatePhysics(0.016f);
-            Physics::handleGroundCollision(pajaro.figura, pajaro.velocidad, 550.0f);
+            
+            if(pajaro.figura.getPosition().y + pajaro.figura.getRadius() > 550.0f) {
+                Physics::handleGroundCollision(pajaro.figura, pajaro.velocidad, 550.0f);
+            }
             
             if(std::abs(pajaro.velocidad.x) < 15.0f && 
-               std::abs(pajaro.velocidad.y) < 15.0f && 
-               pajaro.figura.getPosition().y + 22.0f >= 550.0f - 22.0f) {
+            std::abs(pajaro.velocidad.y) < 15.0f && 
+            pajaro.figura.getPosition().y + pajaro.figura.getRadius() >= 550.0f - pajaro.figura.getRadius()) {
                 pajaro.reset();
             }
         }
 
         ventana.clear();
+        
         ventana.draw(fondo);
-        ventana.draw(resortera.posteIzq);
-        ventana.draw(resortera.posteDer);
+        resortera.draw(ventana); 
         
         if(arrastrando || !pajaro.lanzado) {
-            resortera.updateBands(pajaro.figura.getPosition());
-            ventana.draw(resortera.bandaIzq);
-            ventana.draw(resortera.bandaDer);
+            resortera.updateBands(pajaro.figura.getPosition(), arrastrando);
         }
 
         if(arrastrando) {
-            for(const auto& punto : trayectoria) {
-                sf::CircleShape puntoTrazo(3.0f);
-                puntoTrazo.setFillColor(sf::Color(0, 0, 0, 120));
-                puntoTrazo.setOrigin(1.5f, 1.5f);
-                puntoTrazo.setPosition(punto);
+            for(size_t i = 0; i < trayectoria.size(); ++i) {
+                float alpha = 120.0f * (1.0f - static_cast<float>(i)/trayectoria.size());
+                float size = 2.5f * (1.0f + i*0.05f);
+                sf::CircleShape puntoTrazo(size);
+                puntoTrazo.setFillColor(sf::Color(0, 0, 0, static_cast<sf::Uint8>(alpha)));
+                puntoTrazo.setOrigin(size, size);
+                puntoTrazo.setPosition(trayectoria[i]);
                 ventana.draw(puntoTrazo);
             }
         }

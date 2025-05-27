@@ -1,4 +1,5 @@
 #include "Bird.h"
+#include "Physics.h"
 
 Bird::Bird() {
     figura.setRadius(22.0f);
@@ -8,6 +9,7 @@ Bird::Bird() {
 }
 
 void Bird::updatePhysics(float deltaTime) {
+    Physics::applyAirResistance(velocidad, deltaTime);
     velocidad.y += GRAVEDAD * deltaTime;
     figura.move(velocidad * deltaTime);
 }
