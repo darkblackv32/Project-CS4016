@@ -1,2 +1,2 @@
 run:
-	g++ main.cpp -o angry_birds -lsfml-graphics -lsfml-window -lsfml-system && ./angry_birds && rm -f angry_birds
+	g++ main.cpp Bird.cpp Slingshot.cpp Physics.cpp -o game -lsfml-graphics -lsfml-window -lsfml-system
