@@ -1,4 +1,7 @@
 #include "Game.h"
+
+#include <iostream>
+
 #include "Bird.h"
 #include "Constants.h"
 #include "Levels.h"
@@ -6,9 +9,40 @@
 #include "Slingshot.h"
 #include <vector>
 
+#include <SFML/Audio.hpp>
+
 const float TRAJECTORY_STEP = 0.0015f;
 const float GRAVITY = 0.08f;
 
+
+void playBirdSound(BirdType birdType) {
+    static sf::SoundBuffer mileiBuffer;
+    static sf::SoundBuffer fujimoriBuffer;
+    static bool buffersLoaded = false;
+    static sf::Sound sound;
+
+    if (!buffersLoaded) {
+        bool loaded = true;
+        if (!mileiBuffer.loadFromFile("audios/milei.mp3")) {
+            std::cerr << "Failed to load audios/milei.mp3" << std::endl;
+            loaded = false;
+        }
+        if (!fujimoriBuffer.loadFromFile("audios/fujimori.mp3")) {
+            std::cerr << "Failed to load audios/fujimori.mp3" << std::endl;
+            loaded = false;
+        }
+        buffersLoaded = loaded;
+        if (!loaded) return;
+    }
+
+    if (birdType == BirdType::MILEI) {
+        sound.setBuffer(mileiBuffer);
+    } else {
+        sound.setBuffer(fujimoriBuffer);
+    }
+
+    sound.play();
+}
 void render_bird_game(sf::RenderWindow &ventana, int level, int width,
                       int height, BirdType birdType) {
   Bird pajaro(birdType);
@@ -73,6 +107,8 @@ void render_bird_game(sf::RenderWindow &ventana, int level, int width,
 
         sf::Vector2f direccion = POS_RESORTERA - pajaro.figura.getPosition();
         pajaro.velocidad = direccion * FUERZA_MULTIPLICADOR;
+        // sound
+        playBirdSound(pajaro.getBirdType());
       }
     }
 

@@ -16,33 +16,34 @@ void Bird::loadTextures() {
 
   switch (type) {
     case BirdType::MILEI:
-      if (!idleTexture.loadFromFile("textures/milei/1.png") || 
-          !flyingTexture.loadFromFile("textures/milei/2.png")) {
+      if (!idleTexture.loadFromFile("textures/milei/1.png") ||
+          !flyingTexture.loadFromFile("textures/milei/2.png") ||
+          idleTexture.getSize().x == 0 || flyingTexture.getSize().x == 0) {
         std::cerr << "Error loading Milei textures!" << std::endl;
         createDefaultTexture();
       } else {
         useSprite = true;
-        texture = idleTexture;
-        sprite.setTexture(texture);
-        float scale = 44.0f / std::max(texture.getSize().x, texture.getSize().y);
+        // Set directly to the source texture
+        sprite.setTexture(idleTexture, true); // true = reset rect
+        float scale = 44.0f / std::max(idleTexture.getSize().x, idleTexture.getSize().y);
         sprite.setScale(scale, scale);
-        sprite.setOrigin(texture.getSize().x / 2.0f, texture.getSize().y / 2.0f);
+        sprite.setOrigin(idleTexture.getSize().x / 2.0f, idleTexture.getSize().y / 2.0f);
         sprite.setPosition(figura.getPosition());
       }
       break;
     case BirdType::FUJIMORI:
-      if (!idleTexture.loadFromFile("textures/fujimori/1.png") || 
-          !flyingTexture.loadFromFile("textures/fujimori/2.png")) {
+      // Similar fix for Fujimori
+      if (!idleTexture.loadFromFile("textures/fujimori/1.png") ||
+          !flyingTexture.loadFromFile("textures/fujimori/2.png") ||
+          idleTexture.getSize().x == 0 || flyingTexture.getSize().x == 0) {
         std::cerr << "Error loading Fujimori textures!" << std::endl;
         createDefaultTexture();
       } else {
         useSprite = true;
-        texture = idleTexture;
-        sprite.setTexture(texture);
-        float scale = 44.0f / std::max(texture.getSize().x, texture.getSize().y);
+        sprite.setTexture(idleTexture, true);
+        float scale = 44.0f / std::max(idleTexture.getSize().x, idleTexture.getSize().y);
         sprite.setScale(scale, scale);
-        // Center the sprite
-        sprite.setOrigin(texture.getSize().x / 2.0f, texture.getSize().y / 2.0f);
+        sprite.setOrigin(idleTexture.getSize().x / 2.0f, idleTexture.getSize().y / 2.0f);
         sprite.setPosition(figura.getPosition());
       }
       break;
@@ -56,17 +57,22 @@ void Bird::loadTextures() {
 
 void Bird::updateTextureState() {
   if (!useSprite) return;
-  
+
   if (lanzado) {
-    sprite.setTexture(flyingTexture);
-    sprite.setOrigin(flyingTexture.getSize().x / 2.0f, flyingTexture.getSize().y / 2.0f);
-    float scale = 44.0f / std::max(flyingTexture.getSize().x, flyingTexture.getSize().y);
-    sprite.setScale(scale, scale);
+    // Check if the texture has valid dimensions
+    if (flyingTexture.getSize().x > 0 && flyingTexture.getSize().y > 0) {
+      sprite.setTexture(flyingTexture, true); // Reset texture rect
+      sprite.setOrigin(flyingTexture.getSize().x / 2.0f, flyingTexture.getSize().y / 2.0f);
+      float scale = 44.0f / std::max(flyingTexture.getSize().x, flyingTexture.getSize().y);
+      sprite.setScale(scale, scale);
+    }
   } else {
-    sprite.setTexture(idleTexture);
-    sprite.setOrigin(idleTexture.getSize().x / 2.0f, idleTexture.getSize().y / 2.0f);
-    float scale = 44.0f / std::max(idleTexture.getSize().x, idleTexture.getSize().y);
-    sprite.setScale(scale, scale);
+    if (idleTexture.getSize().x > 0 && idleTexture.getSize().y > 0) {
+      sprite.setTexture(idleTexture, true);
+      sprite.setOrigin(idleTexture.getSize().x / 2.0f, idleTexture.getSize().y / 2.0f);
+      float scale = 44.0f / std::max(idleTexture.getSize().x, idleTexture.getSize().y);
+      sprite.setScale(scale, scale);
+    }
   }
 }
 
