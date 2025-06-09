@@ -7,8 +7,8 @@
 #include <vector>
 
 void render_bird_game(sf::RenderWindow &ventana, int level, int width,
-                      int height) {
-  Bird pajaro;
+                      int height, BirdType birdType) {
+  Bird pajaro(birdType);
   Slingshot resortera;
   bool arrastrando = false;
   sf::Vector2f clickOffset;
@@ -25,11 +25,32 @@ void render_bird_game(sf::RenderWindow &ventana, int level, int width,
   float ground_y = height - 50.0f;
   float deltaTime = 1.0f/60.0f;
 
+  sf::Font font;
+  if (!font.loadFromFile("fonts/arial-font/arial.ttf")) {
+    // If can't load font, try the other font
+    font.loadFromFile("fonts/angrybirds-regular.ttf");
+  }
+  
+  // Add keyboard controls to switch bird types
+  sf::Text instructionText("Press 1-3 to change bird: 1=Default, 2=Milei, 3=Fujimori", font, 16);
+  instructionText.setPosition(10, 10);
+  instructionText.setFillColor(sf::Color::Black);
+
   while (ventana.isOpen()) {
     sf::Event evento;
     while (ventana.pollEvent(evento)) {
       if (evento.type == sf::Event::Closed)
         ventana.close();
+
+      if (evento.type == sf::Event::KeyPressed) {
+        if (evento.key.code == sf::Keyboard::Num1 || evento.key.code == sf::Keyboard::Numpad1) {
+          pajaro.setBirdType(BirdType::DEFAULT);
+        } else if (evento.key.code == sf::Keyboard::Num2 || evento.key.code == sf::Keyboard::Numpad2) {
+          pajaro.setBirdType(BirdType::MILEI);
+        } else if (evento.key.code == sf::Keyboard::Num3 || evento.key.code == sf::Keyboard::Numpad3) {
+          pajaro.setBirdType(BirdType::FUJIMORI);
+        }
+      }
 
       if (evento.type == sf::Event::MouseButtonPressed) {
         sf::Vector2f mousePos =
@@ -64,6 +85,9 @@ void render_bird_game(sf::RenderWindow &ventana, int level, int width,
       }
 
       pajaro.figura.setPosition(nuevaPos);
+      if (pajaro.useSprite) {
+        pajaro.sprite.setPosition(nuevaPos);
+      }
 
       try {
         trayectoria = Physics::calcularTrayectoria(
@@ -81,8 +105,10 @@ void render_bird_game(sf::RenderWindow &ventana, int level, int width,
 
       if (pajaro.figura.getPosition().y + pajaro.figura.getRadius() > ground_y) {
         Physics::handleGroundCollision(pajaro.figura, pajaro.velocidad, ground_y);
+        if (pajaro.useSprite) {
+          pajaro.sprite.setPosition(pajaro.figura.getPosition());
+        }
       }
-
 
       if (std::abs(pajaro.velocidad.x) < 15.0f &&
           std::abs(pajaro.velocidad.y) < 15.0f &&
@@ -124,7 +150,9 @@ void render_bird_game(sf::RenderWindow &ventana, int level, int width,
       }
     }
 
-    ventana.draw(pajaro.figura);
+    // Use the new draw method
+    pajaro.draw(ventana);
+    ventana.draw(instructionText);
     ventana.display();
   }
   

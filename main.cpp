@@ -12,6 +12,7 @@ int main() {
   
   // Start with title screen
   int gameState = 0; // 0 = title screen, 1 = game
+  BirdType currentBirdType = BirdType::DEFAULT;
   
   while (ventana.isOpen()) {
     sf::Event evento;
@@ -29,9 +30,8 @@ int main() {
         gameState = 1;
       }
     } else if (gameState == 1) {
-      render_bird_game(ventana, 0, width, height);
+      render_bird_game(ventana, 0, width, height, currentBirdType);
     }
-    
   }
 
   return 0;
