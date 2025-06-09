@@ -43,23 +43,19 @@ void Slingshot::loadTextures() {
 
 void Slingshot::updateBands(const sf::Vector2f& birdPosition, bool isStretched) {
     auto createBand = [&](const sf::Vector2f& start, const sf::Vector2f& end, sf::VertexArray& va) {
-        const int segments = 15;
         const float sag = isStretched ? 8.0f : 20.0f;
-        const sf::Vector2f delta = end - start;
-        const float length = std::hypot(delta.x, delta.y);
-        
-        for(int i = 0; i <= segments; ++i) {
-            float t = static_cast<float>(i) / segments;
-            float x = t * length;
-            float y = sag * (std::cosh(x / (length / 2.0f)) - 1.0f);
-            
-            sf::Vertex vertex;
-            vertex.position = start + sf::Vector2f(x, y * (delta.y / length));
-            vertex.color = sf::Color(80, 80, 80, 200);
-            
-            if(i < 2) va[i] = vertex;
-            if(i >= segments - 1) va[i] = vertex;
-        }
+
+        va[0].position = start;
+        va[0].color = sf::Color(80, 80, 80, 200);
+
+        va[1].position = start + sf::Vector2f(0, 5.0f);
+        va[1].color = sf::Color(80, 80, 80, 200);
+
+        va[2].position = end;
+        va[2].color = sf::Color(80, 80, 80, 200);
+
+        va[3].position = end + sf::Vector2f(0, 5.0f);
+        va[3].color = sf::Color(80, 80, 80, 200);
     };
 
     createBand(posteIzq.getPosition() + sf::Vector2f(15.0f, 60.0f), birdPosition, bandaIzq);

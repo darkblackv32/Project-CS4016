@@ -16,6 +16,8 @@ struct Bird {
   bool lanzado = false;
   bool enResortera = true;
   sf::Texture texture;
+  sf::Texture idleTexture;  //(1.png)
+  sf::Texture flyingTexture; //  (2.png)
   BirdType type;
   bool useSprite = false;
 
@@ -24,7 +26,8 @@ struct Bird {
   void createDefaultTexture();
   void updatePhysics(float deltaTime);
   void reset();
-  void loadTexture();
+  void loadTextures();
+  void updateTextureState();
   void setBirdType(BirdType birdType);
   BirdType getBirdType() const;
   void draw(sf::RenderWindow& window);

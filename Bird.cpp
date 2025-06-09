@@ -8,19 +8,21 @@ Bird::Bird(BirdType birdType) : type(birdType) {
   figura.setFillColor(sf::Color::White);
   figura.setOrigin(22.0f, 22.0f);
   figura.setPosition(POS_RESORTERA);
-  loadTexture();
+  loadTextures();
 }
 
-void Bird::loadTexture() {
+void Bird::loadTextures() {
   useSprite = false; // Default to using the circle shape
 
   switch (type) {
     case BirdType::MILEI:
-      if (!texture.loadFromFile("milei.png")) {
-        std::cerr << "Error loading milei.png texture!" << std::endl;
+      if (!idleTexture.loadFromFile("textures/milei/1.png") || 
+          !flyingTexture.loadFromFile("textures/milei/2.png")) {
+        std::cerr << "Error loading Milei textures!" << std::endl;
         createDefaultTexture();
       } else {
         useSprite = true;
+        texture = idleTexture;
         sprite.setTexture(texture);
         float scale = 44.0f / std::max(texture.getSize().x, texture.getSize().y);
         sprite.setScale(scale, scale);
@@ -29,14 +31,17 @@ void Bird::loadTexture() {
       }
       break;
     case BirdType::FUJIMORI:
-      if (!texture.loadFromFile("fujimori.png")) {
-        std::cerr << "Error loading fujimori.png texture!" << std::endl;
+      if (!idleTexture.loadFromFile("textures/fujimori/1.png") || 
+          !flyingTexture.loadFromFile("textures/fujimori/2.png")) {
+        std::cerr << "Error loading Fujimori textures!" << std::endl;
         createDefaultTexture();
       } else {
         useSprite = true;
+        texture = idleTexture;
         sprite.setTexture(texture);
         float scale = 44.0f / std::max(texture.getSize().x, texture.getSize().y);
         sprite.setScale(scale, scale);
+        // Center the sprite
         sprite.setOrigin(texture.getSize().x / 2.0f, texture.getSize().y / 2.0f);
         sprite.setPosition(figura.getPosition());
       }
@@ -46,6 +51,22 @@ void Bird::loadTexture() {
       createDefaultTexture();
       figura.setTexture(&texture);
       break;
+  }
+}
+
+void Bird::updateTextureState() {
+  if (!useSprite) return;
+  
+  if (lanzado) {
+    sprite.setTexture(flyingTexture);
+    sprite.setOrigin(flyingTexture.getSize().x / 2.0f, flyingTexture.getSize().y / 2.0f);
+    float scale = 44.0f / std::max(flyingTexture.getSize().x, flyingTexture.getSize().y);
+    sprite.setScale(scale, scale);
+  } else {
+    sprite.setTexture(idleTexture);
+    sprite.setOrigin(idleTexture.getSize().x / 2.0f, idleTexture.getSize().y / 2.0f);
+    float scale = 44.0f / std::max(idleTexture.getSize().x, idleTexture.getSize().y);
+    sprite.setScale(scale, scale);
   }
 }
 
@@ -134,7 +155,9 @@ void Bird::createDefaultTexture() {
   texture.update(pixels);
   delete[] pixels;
   
-  // Use the circle shape with texture for the default bird
+  idleTexture = texture;
+  flyingTexture = texture;
+  
   useSprite = false;
   figura.setTexture(&texture);
 }
@@ -157,12 +180,15 @@ void Bird::reset() {
   velocidad = {0, 0};
   lanzado = false;
   enResortera = true;
+  
+  updateTextureState();
 }
 
 void Bird::setBirdType(BirdType birdType) {
   if (type != birdType) {
     type = birdType;
-    loadTexture();
+    loadTextures();
+    updateTextureState();
   }
 }
 

@@ -6,6 +6,9 @@
 #include "Slingshot.h"
 #include <vector>
 
+const float TRAJECTORY_STEP = 0.0015f;
+const float GRAVITY = 0.08f;
+
 void render_bird_game(sf::RenderWindow &ventana, int level, int width,
                       int height, BirdType birdType) {
   Bird pajaro(birdType);
@@ -23,15 +26,15 @@ void render_bird_game(sf::RenderWindow &ventana, int level, int width,
   }
 
   float ground_y = height - 50.0f;
-  float deltaTime = 1.0f/60.0f;
+  float deltaTime = 1.0f / 60.0f;
 
   sf::Font font;
   if (!font.loadFromFile("fonts/arial-font/arial.ttf")) {
-    // If can't load font, try the other font
-    font.loadFromFile("fonts/angrybirds-regular.ttf");
+    if (!font.loadFromFile("fonts/angrybirds-regular.ttf")) {
+      throw std::runtime_error("Failed to load fonts");
+    }
   }
-  
-  // Add keyboard controls to switch bird types
+
   sf::Text instructionText("Press 1-3 to change bird: 1=Default, 2=Milei, 3=Fujimori", font, 16);
   instructionText.setPosition(10, 10);
   instructionText.setFillColor(sf::Color::Black);
@@ -66,6 +69,8 @@ void render_bird_game(sf::RenderWindow &ventana, int level, int width,
         arrastrando = false;
         pajaro.lanzado = true;
 
+        pajaro.updateTextureState();
+
         sf::Vector2f direccion = POS_RESORTERA - pajaro.figura.getPosition();
         pajaro.velocidad = direccion * FUERZA_MULTIPLICADOR;
       }
@@ -92,8 +97,8 @@ void render_bird_game(sf::RenderWindow &ventana, int level, int width,
       try {
         trayectoria = Physics::calcularTrayectoria(
             nuevaPos, (POS_RESORTERA - nuevaPos) * FUERZA_MULTIPLICADOR,
-            0.0015f,
-            0.08f
+            TRAJECTORY_STEP,
+            GRAVITY
         );
       } catch (...) {
         trayectoria.clear();
@@ -115,12 +120,14 @@ void render_bird_game(sf::RenderWindow &ventana, int level, int width,
           pajaro.figura.getPosition().y + pajaro.figura.getRadius() >=
               ground_y - 0.1f) {
         pajaro.reset();
+        arrastrando = false; // Reset arrastrando flag
       }
-      
+
       if (pajaro.figura.getPosition().x < -100.0f ||
           pajaro.figura.getPosition().x > width + 100.0f ||
           pajaro.figura.getPosition().y > height + 100.0f) {
         pajaro.reset();
+        arrastrando = false; // Reset arrastrando flag
       }
     }
 
@@ -150,11 +157,10 @@ void render_bird_game(sf::RenderWindow &ventana, int level, int width,
       }
     }
 
-    // Use the new draw method
     pajaro.draw(ventana);
     ventana.draw(instructionText);
     ventana.display();
   }
-  
+
   delete lev;
 }
