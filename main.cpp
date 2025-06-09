@@ -9,22 +9,29 @@ int main() {
   sf::RenderWindow ventana(sf::VideoMode(width, height),
                            "Angry Birds Ultimate");
   ventana.setFramerateLimit(60);
-
+  
+  // Start with title screen
+  int gameState = 0; // 0 = title screen, 1 = game
+  
   while (ventana.isOpen()) {
     sf::Event evento;
     while (ventana.pollEvent(evento)) {
       if (evento.type == sf::Event::Closed)
         ventana.close();
     }
-    int next = render_title(ventana);
-
-    if (next == -1) {
-      // The text font couldn't load
-      return 1;
-    } else if (next == 1) {
-      // Load game
+    
+    if (gameState == 0) {
+      int next = render_title(ventana);
+      
+      if (next == -1) {
+        return 1;
+      } else if (next == 1) {
+        gameState = 1;
+      }
+    } else if (gameState == 1) {
       render_bird_game(ventana, 0, width, height);
     }
+    
   }
 
   return 0;
