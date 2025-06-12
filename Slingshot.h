@@ -15,7 +15,7 @@ public:
   sf::VertexArray bandaIzq;
   sf::VertexArray bandaDer;
 
-  Slingshot();
+  Slingshot(sf::Vector2f &pos_resortera);
   void loadTextures();
   void updateBands(const sf::Vector2f &birdPosition, bool isStretched);
   void draw(sf::RenderWindow &window);

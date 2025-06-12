@@ -68,6 +68,11 @@ void Level::setStarts(float x, float y) {
   this->START_LEVEL_Y = y;
 }
 
+void Level::setBounds(float x, float y) {
+  this->x_bound = x;
+  this->y_bound = y;
+}
+
 void Level::render(sf::RenderWindow &ventana) {
   for (int i = 0; i < this->floor.size(); i++) {
     ventana.draw(this->floor[i]);
@@ -87,11 +92,15 @@ Level *return_level(int level, int width, int height) {
   Level *l = new Level();
   float START_LEVEL_X;
   float START_LEVEL_Y;
+  int bound_x;
+  int bound_y;
 
   switch (level) {
   case 0:
-    START_LEVEL_X = width / 2.0f;
-    START_LEVEL_Y = height - BLOCK * 3;
+    bound_x = 1000;
+    bound_y = 700;
+    START_LEVEL_X = bound_x - BLOCK * 17;
+    START_LEVEL_Y = bound_y - BLOCK * 3;
 
     objSizes = {
         sf::Vector2f(BLOCK, 2 * BLOCK), sf::Vector2f(6 * BLOCK, BLOCK),
@@ -121,8 +130,8 @@ Level *return_level(int level, int width, int height) {
 
     l->setObjects(objSizes, objPositions, objColors);
 
-    objSizes = {sf::Vector2f(width, BLOCK * 2)};
-    objPositions = {std::make_pair(0.0f, height - 2 * BLOCK)};
+    objSizes = {sf::Vector2f(bound_x, BLOCK * 2)};
+    objPositions = {std::make_pair(0.0f, bound_y - 2 * BLOCK)};
     objColors = {{120, 110, 100}};
 
     l->setFloor(objSizes, objPositions, objColors);
@@ -133,6 +142,10 @@ Level *return_level(int level, int width, int height) {
     objColors = {{9, 186, 45}};
 
     l->setTargets(objSizes, objPositions, objColors);
+
+    l->setStarts(START_LEVEL_X, START_LEVEL_Y);
+
+    l->setBounds(bound_x, bound_y);
 
     break;
   }

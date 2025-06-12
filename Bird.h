@@ -3,25 +3,23 @@
 #include <SFML/Graphics.hpp>
 #include <string>
 
-enum class BirdType {
-    DEFAULT,
-    MILEI,
-    FUJIMORI
-};
+enum class BirdType { DEFAULT, MILEI, FUJIMORI };
 
 struct Bird {
-  sf::CircleShape figura;  // Used for collision and physics
-  sf::Sprite sprite;   // Used for drawing custom images
+  sf::CircleShape figura; // Used for collision and physics
+  sf::Sprite sprite;      // Used for drawing custom images
   sf::Vector2f velocidad;
   bool lanzado = false;
   bool enResortera = true;
   sf::Texture texture;
-  sf::Texture idleTexture;  //(1.png)
+  sf::Texture idleTexture;   //(1.png)
   sf::Texture flyingTexture; //  (2.png)
   BirdType type;
   bool useSprite = false;
+  sf::Vector2f pos_resortera;
 
-  Bird(BirdType birdType = BirdType::DEFAULT);
+  Bird(BirdType birdType = BirdType::DEFAULT,
+       sf::Vector2f pr = sf::Vector2f(100.0f, 470.0f));
 
   void createDefaultTexture();
   void updatePhysics(float deltaTime);
@@ -30,5 +28,5 @@ struct Bird {
   void updateTextureState();
   void setBirdType(BirdType birdType);
   BirdType getBirdType() const;
-  void draw(sf::RenderWindow& window);
+  void draw(sf::RenderWindow &window);
 };
