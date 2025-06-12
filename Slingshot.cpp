@@ -1,70 +1,104 @@
 #include "Slingshot.h"
 
-Slingshot::Slingshot() {
-    loadTextures();
-    
-    posteIzq.setSize({30.0f, 220.0f});
-    posteIzq.setTexture(&woodTexture);
-    posteIzq.setOrigin(5.0f, 0.0f);
-    posteIzq.setPosition(POS_RESORTERA.x - 55.0f, POS_RESORTERA.y - 100.0f);
-    posteIzq.setRotation(-5.0f);
-
-    posteDer.setSize({30.0f, 220.0f});
-    posteDer.setTexture(&woodTexture);
-    posteDer.setOrigin(25.0f, 0.0f);
-    posteDer.setPosition(POS_RESORTERA.x + 55.0f, POS_RESORTERA.y - 100.0f);
-    posteDer.setRotation(5.0f);
-
-    bandaIzq.setPrimitiveType(sf::TrianglesStrip);
-    bandaIzq.resize(4);
-    bandaDer.setPrimitiveType(sf::TrianglesStrip);
-    bandaDer.resize(4);
+namespace {
+    const sf::Color WOOD_COLOR(139, 69, 19);
+    const sf::Color BAND_COLOR(80, 80, 80, 200);
+    const sf::Vector2f POST_OFFSET(-55.0f, -100.0f);
+    const sf::Vector2f LEFT_ORIGIN(5.0f, 0.0f);
+    const sf::Vector2f RIGHT_ORIGIN(25.0f, 0.0f);
+    const sf::Vector2f BAND_ATTACH_LEFT(15.0f, 60.0f);
+    const sf::Vector2f BAND_ATTACH_RIGHT(-15.0f, 60.0f);
 }
 
-void Slingshot::loadTextures() {
-    woodTexture.create(32, 32);
-    sf::Uint8* pixels = new sf::Uint8[32 * 32 * 4];
-    for(int y = 0; y < 32; ++y) {
-        for(int x = 0; x < 32; ++x) {
-            int index = (y * 32 + x) * 4;
-            pixels[index] = 139;    // R
-            pixels[index+1] = 69;   // G
-            pixels[index+2] = 19;   // B
-            pixels[index+3] = 255;  // A
-            if(x % 4 == 0) {
-                pixels[index] += 20;
-                pixels[index+1] += 10;
+Slingshot::Slingshot() {
+    leftPost.setSize({POST_WIDTH, POST_HEIGHT});
+    rightPost.setSize({POST_WIDTH, POST_HEIGHT});
+    
+    leftBand.setPrimitiveType(sf::TriangleStrip);
+    rightBand.setPrimitiveType(sf::TriangleStrip);
+    
+    configurePosts();
+    configureBands();
+}
+
+sf::Texture Slingshot::createWoodTexture() {
+    sf::Texture texture;
+    texture.create(32, 32);
+    
+    std::vector<sf::Uint8> pixels(32 * 32 * 4);
+    for (int y = 0; y < 32; ++y) {
+        for (int x = 0; x < 32; ++x) {
+            const size_t index = (y * 32 + x) * 4;
+            pixels[index]     = WOOD_COLOR.r;
+            pixels[index + 1] = WOOD_COLOR.g;
+            pixels[index + 2] = WOOD_COLOR.b;
+            pixels[index + 3] = 255;
+            
+            if (x % 4 == 0) {
+                pixels[index]     = std::min(255, pixels[index] + 20);
+                pixels[index + 1] = std::min(255, pixels[index + 1] + 10);
             }
         }
     }
-    woodTexture.update(pixels);
-    delete[] pixels;
+    
+    texture.update(pixels.data());
+    return texture;
+}
+
+void Slingshot::configurePosts() {
+    static auto woodTexture = createWoodTexture();
+    
+    leftPost.setTexture(&woodTexture);
+    leftPost.setOrigin(LEFT_ORIGIN);
+    leftPost.setPosition(POS_RESORTERA + POST_OFFSET);
+    leftPost.setRotation(-5.0f);
+
+    rightPost.setTexture(&woodTexture);
+    rightPost.setOrigin(RIGHT_ORIGIN);
+    rightPost.setPosition(POS_RESORTERA - sf::Vector2f(POST_OFFSET.x, -POST_OFFSET.y));
+    rightPost.setRotation(5.0f);
+}
+
+void Slingshot::configureBands() {
+    leftBand.resize(4);
+    rightBand.resize(4);
+    
+    for (int i = 0; i < 4; ++i) {
+        leftBand[i].color = BAND_COLOR;
+        rightBand[i].color = BAND_COLOR;
+    }
+}
+
+void Slingshot::updateBandGeometry(sf::VertexArray& band, 
+                                  const sf::Vector2f& start, 
+                                  const sf::Vector2f& end,
+                                  bool isStretched) {
+    const sf::Vector2f direction = end - start;
+    const float length = std::hypot(direction.x, direction.y);
+    const sf::Vector2f unitDirection = (length > 0) ? direction / length : sf::Vector2f();
+    const sf::Vector2f normal(-unitDirection.y, unitDirection.x);
+    const sf::Vector2f offset = normal * BAND_THICKNESS * 0.5f;
+    
+    const float sag = isStretched ? 0.0f : SAG_AMOUNT;
+    const sf::Vector2f midPoint = (start + end) * 0.5f + sf::Vector2f(0, sag);
+
+    band[0].position = start - offset;
+    band[1].position = start + offset;
+    band[2].position = midPoint - offset;
+    band[3].position = midPoint + offset;
 }
 
 void Slingshot::updateBands(const sf::Vector2f& birdPosition, bool isStretched) {
-    auto createBand = [&](const sf::Vector2f& start, const sf::Vector2f& end, sf::VertexArray& va) {
-        const float sag = isStretched ? 8.0f : 20.0f;
-
-        va[0].position = start;
-        va[0].color = sf::Color(80, 80, 80, 200);
-
-        va[1].position = start + sf::Vector2f(0, 5.0f);
-        va[1].color = sf::Color(80, 80, 80, 200);
-
-        va[2].position = end;
-        va[2].color = sf::Color(80, 80, 80, 200);
-
-        va[3].position = end + sf::Vector2f(0, 5.0f);
-        va[3].color = sf::Color(80, 80, 80, 200);
-    };
-
-    createBand(posteIzq.getPosition() + sf::Vector2f(15.0f, 60.0f), birdPosition, bandaIzq);
-    createBand(posteDer.getPosition() + sf::Vector2f(-15.0f, 60.0f), birdPosition, bandaDer);
+    const auto leftStart = leftPost.getPosition() + BAND_ATTACH_LEFT;
+    const auto rightStart = rightPost.getPosition() + BAND_ATTACH_RIGHT;
+    
+    updateBandGeometry(leftBand, leftStart, birdPosition, isStretched);
+    updateBandGeometry(rightBand, rightStart, birdPosition, isStretched);
 }
 
-void Slingshot::draw(sf::RenderWindow& window) {
-    window.draw(posteIzq);
-    window.draw(posteDer);
-    window.draw(bandaIzq);
-    window.draw(bandaDer);
+void Slingshot::draw(sf::RenderWindow& window) const {
+    window.draw(leftPost);
+    window.draw(rightPost);
+    window.draw(leftBand);
+    window.draw(rightBand);
 }

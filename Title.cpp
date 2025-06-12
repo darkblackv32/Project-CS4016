@@ -3,15 +3,14 @@
 
 int render_title(sf::RenderWindow &ventana) {
 
-  // Load font
-  sf::Font font;
+  sf::Font font;   // load font
 
-  // Change the font
-  if (!font.loadFromFile("./fonts/angrybirds-regular.ttf")) {
+  // change font
+  if (!font.loadFromFile("./assets/fonts/angrybirds-regular.ttf")) {
     return -1;
   }
 
-  // Game Title
+  // game title
   sf::Text gameTitle;
   gameTitle.setFont(font);
   gameTitle.setString("Angry politician");
@@ -21,9 +20,9 @@ int render_title(sf::RenderWindow &ventana) {
                       gameTitle.getLocalBounds().height / 2);
   gameTitle.setPosition(ventana.getSize().x / 2, ventana.getSize().y / 4);
 
-  // Start Button
+  // start button
   sf::RectangleShape startButton(sf::Vector2f(200, 70));
-  startButton.setFillColor(sf::Color(100, 100, 250)); // Blueish color
+  startButton.setFillColor(sf::Color(100, 100, 250)); // blueish color
   startButton.setOrigin(startButton.getLocalBounds().width / 2,
                         startButton.getLocalBounds().height / 2);
   startButton.setPosition(ventana.getSize().x / 2,
@@ -38,11 +37,11 @@ int render_title(sf::RenderWindow &ventana) {
                             startButtonText.getLocalBounds().height / 2);
   startButtonText.setPosition(startButton.getPosition());
 
-  // Clock for title animation
+  // clock for title animation
   sf::Clock clock;
   float titleInitialY = gameTitle.getPosition().y;
-  float animationAmplitude = 20.0f; // How much the title moves up and down
-  float animationSpeed = 2.0f;      // How fast the title moves
+  float animationAmplitude = 20.0f; // how much the title moves up and down
+  float animationSpeed = 2.0f;      // how fast the title moves
 
   while (ventana.isOpen()) {
     sf::Event event;
@@ -52,24 +51,24 @@ int render_title(sf::RenderWindow &ventana) {
       }
       if (event.type == sf::Event::MouseButtonPressed) {
         if (event.mouseButton.button == sf::Mouse::Left) {
-          // Check if the mouse click is within the button bounds
+          // check if the mouse click is within the button bounds
           if (startButton.getGlobalBounds().contains(
                   static_cast<float>(event.mouseButton.x),
                   static_cast<float>(event.mouseButton.y))) {
-            // Start the game
+            // start the game
             // continue the game
             return 1;
           }
         }
       }
     }
-    // Update title position for animation
+    // update title position for animation
     float elapsedTime = clock.getElapsedTime().asSeconds();
     float newY = titleInitialY +
                  animationAmplitude * std::sin(elapsedTime * animationSpeed);
     gameTitle.setPosition(gameTitle.getPosition().x, newY);
 
-    ventana.clear(sf::Color(50, 50, 150)); // Dark blue background
+    ventana.clear(sf::Color(50, 50, 150)); // dark blue background
     ventana.draw(gameTitle);
     ventana.draw(startButton);
     ventana.draw(startButtonText);

@@ -11,7 +11,7 @@
 
 #include <SFML/Audio.hpp>
 
-const float TRAJECTORY_STEP = 0.0015f;
+const float TRAJECTORY_STEP = 0.0001f;
 const float GRAVITY = 0.08f;
 
 
@@ -23,12 +23,12 @@ void playBirdSound(BirdType birdType) {
 
     if (!buffersLoaded) {
         bool loaded = true;
-        if (!mileiBuffer.loadFromFile("audios/milei.mp3")) {
-            std::cerr << "Failed to load audios/milei.mp3" << std::endl;
+        if (!mileiBuffer.loadFromFile("assets/audios/milei.ogg")) {
+            std::cerr << "Failed to load audios/milei.ogg" << std::endl;
             loaded = false;
         }
-        if (!fujimoriBuffer.loadFromFile("audios/fujimori.mp3")) {
-            std::cerr << "Failed to load audios/fujimori.mp3" << std::endl;
+        if (!fujimoriBuffer.loadFromFile("assets/audios/fujimori.ogg")) {
+            std::cerr << "Failed to load audios/fujimori.ogg" << std::endl;
             loaded = false;
         }
         buffersLoaded = loaded;
@@ -43,6 +43,7 @@ void playBirdSound(BirdType birdType) {
 
     sound.play();
 }
+
 void render_bird_game(sf::RenderWindow &ventana, int level, int width,
                       int height, BirdType birdType) {
   Bird pajaro(birdType);
@@ -63,8 +64,8 @@ void render_bird_game(sf::RenderWindow &ventana, int level, int width,
   float deltaTime = 1.0f / 60.0f;
 
   sf::Font font;
-  if (!font.loadFromFile("fonts/arial-font/arial.ttf")) {
-    if (!font.loadFromFile("fonts/angrybirds-regular.ttf")) {
+  if (!font.loadFromFile("assets/fonts/arial-font/arial.ttf")) {
+    if (!font.loadFromFile("assets/fonts/angrybirds-regular.ttf")) {
       throw std::runtime_error("Failed to load fonts");
     }
   }
@@ -126,7 +127,7 @@ void render_bird_game(sf::RenderWindow &ventana, int level, int width,
       }
 
       pajaro.figura.setPosition(nuevaPos);
-      if (pajaro.useSprite) {
+      if (pajaro.sprite.getTexture()) {
         pajaro.sprite.setPosition(nuevaPos);
       }
 
@@ -146,7 +147,7 @@ void render_bird_game(sf::RenderWindow &ventana, int level, int width,
 
       if (pajaro.figura.getPosition().y + pajaro.figura.getRadius() > ground_y) {
         Physics::handleGroundCollision(pajaro.figura, pajaro.velocidad, ground_y);
-        if (pajaro.useSprite) {
+        if (pajaro.sprite.getTexture()) {
           pajaro.sprite.setPosition(pajaro.figura.getPosition());
         }
       }
@@ -156,7 +157,7 @@ void render_bird_game(sf::RenderWindow &ventana, int level, int width,
           pajaro.figura.getPosition().y + pajaro.figura.getRadius() >=
               ground_y - 0.1f) {
         pajaro.reset();
-        arrastrando = false; // Reset arrastrando flag
+        arrastrando = false; // reset arrastrando flag
       }
 
       if (pajaro.figura.getPosition().x < -100.0f ||

@@ -1,5 +1,4 @@
-#ifndef LEVELS_H_
-#define LEVELS_H_
+#pragma once
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
@@ -36,5 +35,3 @@ struct Level {
 Level *return_level(int level, int width, int height);
 
 void test_level(int level);
-
-#endif // LEVELS_H_
