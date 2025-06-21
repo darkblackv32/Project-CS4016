@@ -1,7 +1,7 @@
-#include "levels.h"
+#include "Menu.h"
 #include <iostream>
 
 int main() {
-  test_level(0);
+  test_menu();
   return 0;
 }
