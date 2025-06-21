@@ -3,7 +3,18 @@
 
 #include <SFML/Graphics.hpp>
 #include <iostream>
+#include <string>
 #include <vector>
+
+int extract_number(const std::string &s) {
+  size_t last_space = s.rfind(' ');
+  if (last_space != std::string::npos) {
+    return std::stoi(s.substr(last_space + 1));
+  }
+  // If no space is found, return -1
+  // Lest make an agreement and promise that all the levels end with a number
+  return std::stoi(s);
+}
 
 Menu::Menu(sf::RenderWindow &window, const std::string &title,
            const std::vector<std::string> &options)
@@ -19,7 +30,8 @@ Menu::Menu(sf::RenderWindow &window, const std::string &title,
   title_text_.setString(title_);
   title_text_.setCharacterSize(72);
   title_text_.setFillColor(sf::Color::White);
-  title_text_.setPosition(window_size.x / 2, 20);
+  title_text_.setPosition(
+      window_size.x / 2 - title_text_.getLocalBounds().width / 2, 20);
 
   // Initialize option texts
   for (const auto &option : options_) {
@@ -74,9 +86,8 @@ void Menu::handleInput(const sf::Event &event) {
 
         for (int i = start_index; i < end_index; ++i) {
           if (option_texts_[i].getGlobalBounds().contains(mouse_pos)) {
-            std::cout << "Selected option: " << options_[i] << std::endl;
-            // Handle option selection here
-            break; // Exit loop after selecting an option
+            level = extract_number(options_[i]);
+            break;
           }
         }
       }
@@ -149,12 +160,48 @@ void Menu::updateOptionPositions() {
   }
 }
 
+int Menu::get_level() { return this->level; }
+
+int render_menu(sf::RenderWindow &window) {
+  // Make this dynamic if possible
+  std::vector<std::string> levels = {
+      "Level 0",
+      "Level 1",
+      "Level 2",
+  };
+  Menu menu(window, "Main Menu", levels);
+  while (window.isOpen()) {
+    sf::Event event;
+    while (window.pollEvent(event)) {
+      if (event.type == sf::Event::Closed) {
+        window.close();
+        return -1;
+      }
+      menu.handleInput(event);
+    }
+
+    if (menu.get_level() > -1) {
+      return menu.get_level();
+    }
+
+    // dark blue background
+    window.clear(sf::Color(50, 50, 150));
+    menu.draw();
+    window.display();
+  }
+
+  // Shouldn't happen
+  return -1;
+}
+
 int test_menu() {
   sf::RenderWindow window(sf::VideoMode(800, 600), "SFML Menu");
+  window.setFramerateLimit(60);
 
   std::vector<std::string> options = {
-      "Level 1", "Level 2", "Level 3", "Level 4", "Level 5",
-      "Level 6", "Level 7", "Level 8", "Level 9", "Level 10",
+      "Level 0",
+      "Level 1",
+      "Level 2",
   };
 
   Menu menu(window, "Main Menu", options);

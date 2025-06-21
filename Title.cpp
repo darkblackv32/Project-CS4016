@@ -3,7 +3,7 @@
 
 int render_title(sf::RenderWindow &ventana) {
 
-  sf::Font font;   // load font
+  sf::Font font; // load font
 
   // change font
   if (!font.loadFromFile("./assets/fonts/angrybirds-regular.ttf")) {
@@ -37,6 +37,24 @@ int render_title(sf::RenderWindow &ventana) {
                             startButtonText.getLocalBounds().height / 2);
   startButtonText.setPosition(startButton.getPosition());
 
+  // menu button
+  sf::RectangleShape menuButton(sf::Vector2f(250, 70));
+  menuButton.setFillColor(sf::Color(100, 100, 250)); // blueish color
+  menuButton.setOrigin(menuButton.getLocalBounds().width / 2,
+                       menuButton.getLocalBounds().height / 2);
+  menuButton.setPosition(ventana.getSize().x / 2,
+                         ventana.getSize().y / 2 + 150 +
+                             menuButton.getLocalBounds().height);
+
+  sf::Text menuButtonText;
+  menuButtonText.setFont(font);
+  menuButtonText.setString("Level selection");
+  menuButtonText.setCharacterSize(36);
+  menuButtonText.setFillColor(sf::Color::White);
+  menuButtonText.setOrigin(menuButtonText.getLocalBounds().width / 2,
+                           menuButtonText.getLocalBounds().height / 2);
+  menuButtonText.setPosition(menuButton.getPosition());
+
   // clock for title animation
   sf::Clock clock;
   float titleInitialY = gameTitle.getPosition().y;
@@ -58,6 +76,10 @@ int render_title(sf::RenderWindow &ventana) {
             // start the game
             // continue the game
             return 1;
+          } else if (menuButton.getGlobalBounds().contains(
+                         static_cast<float>(event.mouseButton.x),
+                         static_cast<float>(event.mouseButton.y))) {
+            return 2;
           }
         }
       }
@@ -72,6 +94,8 @@ int render_title(sf::RenderWindow &ventana) {
     ventana.draw(gameTitle);
     ventana.draw(startButton);
     ventana.draw(startButtonText);
+    ventana.draw(menuButton);
+    ventana.draw(menuButtonText);
     ventana.display();
   }
 

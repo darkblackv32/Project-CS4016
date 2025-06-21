@@ -23,6 +23,8 @@ private:
   sf::Sprite button_left_;
   sf::Sprite button_right_;
 
+  int level = -1;
+
 public:
   Menu(sf::RenderWindow &window, const std::string &title,
        const std::vector<std::string> &options);
@@ -32,8 +34,11 @@ public:
 
   void nextPage();
   void previousPage();
+  int get_level();
 };
 
+int extract_number(const std::string &s);
+int render_menu(sf::RenderWindow &window);
 int test_menu();
 
 #endif // MENU_H_
