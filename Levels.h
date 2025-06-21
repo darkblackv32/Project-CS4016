@@ -13,6 +13,9 @@ struct Level {
   float START_LEVEL_X;
   float START_LEVEL_Y;
 
+  int x_bound;
+  int y_bound;
+
   Level();
   ~Level();
 
@@ -28,6 +31,8 @@ struct Level {
                 std::vector<sf::Color> &objectColors);
 
   void setStarts(float x, float y);
+
+  void setBounds(float x, float y);
 
   void render(sf::RenderWindow &ventana);
 };
