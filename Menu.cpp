@@ -136,13 +136,11 @@ void Menu::updateOptionPositions() {
   float x_offset = (window_size.x +
                     option_texts_[0].getLocalBounds().width * OPTIONS_PER_ROW) /
                    OPTIONS_PER_ROW;
-  std::cout << x_offset << std::endl;
   float y_offset = (window_size.y +
                     option_texts_[0].getLocalBounds().height *
                         (OPTIONS_PER_PAGE / OPTIONS_PER_ROW) -
                     start_y) /
                    (OPTIONS_PER_PAGE / OPTIONS_PER_ROW);
-  std::cout << y_offset << std::endl;
 
   // Calculate the range of options to display on the current page
   int start_index = current_page_ * OPTIONS_PER_PAGE;

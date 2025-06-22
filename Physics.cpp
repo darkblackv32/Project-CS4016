@@ -19,6 +19,8 @@ std::vector<sf::Vector2f> Physics::calcularTrayectoria(sf::Vector2f inicio,
     currentVel += (sf::Vector2f(0.0f, GRAVEDAD) + drag) * dt;
     currentPos += currentVel * dt;
 
+    // Make this dynamic to work with gound level. In fact, it should detect the
+    // floor and check if it has crashed out. Could be fixed with physics
     if (currentPos.y > 750.0f) {
       // simular rebote
       currentVel.y *= -COEF_RESTITUCION;

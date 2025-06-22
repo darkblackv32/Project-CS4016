@@ -1,10 +1,12 @@
 #include "Game.h"
 
+#include <SFML/Window/Keyboard.hpp>
 #include <iostream>
 
 #include "Bird.h"
 #include "Constants.h"
 #include "Levels.h"
+#include "Pause.h"
 #include "Physics.h"
 #include "Slingshot.h"
 #include <vector>
@@ -44,15 +46,15 @@ void playBirdSound(BirdType birdType) {
   sound.play();
 }
 
-void render_bird_game(sf::RenderWindow &ventana, int level, int width,
-                      int height, BirdType birdType) {
+int render_bird_game(sf::RenderWindow &ventana, int level, int width,
+                     int height, BirdType birdType) {
   bool arrastrando = false;
   sf::Vector2f clickOffset;
   std::vector<sf::Vector2f> trayectoria;
 
   Level *lev = return_level(level, width, height);
   if (!lev) {
-    return;
+    return -1;
   }
 
   sf::View levelView(sf::FloatRect(0, 0, 800, 600));
@@ -60,7 +62,11 @@ void render_bird_game(sf::RenderWindow &ventana, int level, int width,
   sf::Vector2f previousMousePos;
   sf::Vector2f pos_resortera(100.0f, lev->y_bound - 130.0f);
   // move represents 0 for the bird and 1 for the camera
+  levelView.setCenter(lev->x_bound / 2, lev->y_bound / 2);
   int move = 0;
+
+  // For the pause menu
+  int response = 1;
 
   sf::RectangleShape fondo(
       {static_cast<float>(lev->x_bound), static_cast<float>(lev->y_bound)});
@@ -100,6 +106,8 @@ void render_bird_game(sf::RenderWindow &ventana, int level, int width,
         } else if (evento.key.code == sf::Keyboard::Num3 ||
                    evento.key.code == sf::Keyboard::Numpad3) {
           pajaro.setBirdType(BirdType::FUJIMORI);
+        } else if (evento.key.code == sf::Keyboard::Escape) {
+          response = render_pause_menu(ventana);
         }
       }
 
@@ -133,6 +141,10 @@ void render_bird_game(sf::RenderWindow &ventana, int level, int width,
           playBirdSound(pajaro.getBirdType());
         }
       }
+    }
+
+    if (response > 1) {
+      break;
     }
 
     if (arrastrando && move == 0) {
@@ -238,6 +250,7 @@ void render_bird_game(sf::RenderWindow &ventana, int level, int width,
     ventana.clear();
 
     ventana.setView(levelView);
+
     ventana.draw(fondo);
     if (lev) {
       lev->render(ventana);
@@ -268,4 +281,5 @@ void render_bird_game(sf::RenderWindow &ventana, int level, int width,
   }
 
   delete lev;
+  return response;
 }

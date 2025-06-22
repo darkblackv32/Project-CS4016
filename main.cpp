@@ -15,6 +15,9 @@ int main() {
   int gameState = 0; // 0 = title screen, 1 = game
   BirdType currentBirdType = BirdType::DEFAULT;
 
+  // selected level
+  int level = 0;
+
   while (ventana.isOpen()) {
     sf::Event evento;
     while (ventana.pollEvent(evento)) {
@@ -31,13 +34,21 @@ int main() {
         gameState = 1;
       } else if (next == 2) {
         gameState = 2;
+      } else if (next == 3) {
+        ventana.close();
       }
     } else if (gameState == 1) {
-      render_bird_game(ventana, 0, width, height, currentBirdType);
+      int response =
+          render_bird_game(ventana, level, width, height, currentBirdType);
+      if (response == 2) {
+        gameState = 0;
+      } else if (response == 3) {
+        ventana.close();
+      }
     } else if (gameState == 2) {
-      int level = render_menu(ventana);
+      level = render_menu(ventana);
       if (level > -1) {
-        render_bird_game(ventana, level, width, height, currentBirdType);
+        gameState = 1;
       }
     }
   }

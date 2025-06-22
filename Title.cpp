@@ -1,3 +1,4 @@
+#include "Title.h"
 #include <SFML/Graphics.hpp>
 #include <cmath>
 
@@ -10,6 +11,10 @@ int render_title(sf::RenderWindow &ventana) {
     return -1;
   }
 
+  // blueish color
+  auto button_color = sf::Color(100, 100, 250);
+  int box_width = 300;
+
   // game title
   sf::Text gameTitle;
   gameTitle.setFont(font);
@@ -21,12 +26,12 @@ int render_title(sf::RenderWindow &ventana) {
   gameTitle.setPosition(ventana.getSize().x / 2, ventana.getSize().y / 4);
 
   // start button
-  sf::RectangleShape startButton(sf::Vector2f(200, 70));
-  startButton.setFillColor(sf::Color(100, 100, 250)); // blueish color
+  sf::RectangleShape startButton(sf::Vector2f(box_width, 70));
+  startButton.setFillColor(button_color);
   startButton.setOrigin(startButton.getLocalBounds().width / 2,
                         startButton.getLocalBounds().height / 2);
   startButton.setPosition(ventana.getSize().x / 2,
-                          ventana.getSize().y / 2 + 100);
+                          ventana.getSize().y / 3 + 100);
 
   sf::Text startButtonText;
   startButtonText.setFont(font);
@@ -38,13 +43,13 @@ int render_title(sf::RenderWindow &ventana) {
   startButtonText.setPosition(startButton.getPosition());
 
   // menu button
-  sf::RectangleShape menuButton(sf::Vector2f(250, 70));
-  menuButton.setFillColor(sf::Color(100, 100, 250)); // blueish color
+  sf::RectangleShape menuButton(sf::Vector2f(box_width, 70));
+  menuButton.setFillColor(button_color);
   menuButton.setOrigin(menuButton.getLocalBounds().width / 2,
                        menuButton.getLocalBounds().height / 2);
   menuButton.setPosition(ventana.getSize().x / 2,
-                         ventana.getSize().y / 2 + 150 +
-                             menuButton.getLocalBounds().height);
+                         startButton.getPosition().y + 100 +
+                             startButton.getLocalBounds().getSize().y);
 
   sf::Text menuButtonText;
   menuButtonText.setFont(font);
@@ -54,6 +59,24 @@ int render_title(sf::RenderWindow &ventana) {
   menuButtonText.setOrigin(menuButtonText.getLocalBounds().width / 2,
                            menuButtonText.getLocalBounds().height / 2);
   menuButtonText.setPosition(menuButton.getPosition());
+
+  // quit button
+  sf::RectangleShape quitButton(sf::Vector2f(box_width, 70));
+  quitButton.setFillColor(button_color);
+  quitButton.setOrigin(quitButton.getLocalBounds().width / 2,
+                       quitButton.getLocalBounds().height / 2);
+  quitButton.setPosition(ventana.getSize().x / 2,
+                         menuButton.getPosition().y + 100 +
+                             menuButton.getLocalBounds().getSize().y);
+
+  sf::Text quitButtonText;
+  quitButtonText.setFont(font);
+  quitButtonText.setString("Quit");
+  quitButtonText.setCharacterSize(36);
+  quitButtonText.setFillColor(sf::Color::White);
+  quitButtonText.setOrigin(quitButtonText.getLocalBounds().width / 2,
+                           quitButtonText.getLocalBounds().height / 2);
+  quitButtonText.setPosition(quitButton.getPosition());
 
   // clock for title animation
   sf::Clock clock;
@@ -80,6 +103,10 @@ int render_title(sf::RenderWindow &ventana) {
                          static_cast<float>(event.mouseButton.x),
                          static_cast<float>(event.mouseButton.y))) {
             return 2;
+          } else if (quitButton.getGlobalBounds().contains(
+                         static_cast<float>(event.mouseButton.x),
+                         static_cast<float>(event.mouseButton.y))) {
+            return 3;
           }
         }
       }
@@ -96,6 +123,8 @@ int render_title(sf::RenderWindow &ventana) {
     ventana.draw(startButtonText);
     ventana.draw(menuButton);
     ventana.draw(menuButtonText);
+    ventana.draw(quitButton);
+    ventana.draw(quitButtonText);
     ventana.display();
   }
 
