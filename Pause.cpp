@@ -34,10 +34,7 @@ int render_pause_menu(sf::RenderWindow &ventana) {
   gameTitle.setOrigin(gameTitle.getLocalBounds().width / 2,
                       gameTitle.getLocalBounds().height / 2);
   gameTitle.setPosition(ventana.getSize().x / 2,
-                        box.getPosition().y - box.getSize().y / 2 + 50);
-
-  int diff_button =
-      (box.getSize().y - gameTitle.getLocalBounds().getSize().y * 4) / 3;
+                        box.getPosition().y - box.getSize().y / 2 + 40);
 
   // Resume button
   sf::RectangleShape resumeButton(
@@ -46,8 +43,7 @@ int render_pause_menu(sf::RenderWindow &ventana) {
   resumeButton.setOrigin(resumeButton.getLocalBounds().width / 2,
                          resumeButton.getLocalBounds().height / 2);
   resumeButton.setPosition(ventana.getSize().x / 2,
-                           gameTitle.getPosition().y +
-                               gameTitle.getLocalBounds().getSize().y * 3);
+                           gameTitle.getPosition().y + 75);
 
   sf::Text resumeButtonText;
   resumeButtonText.setFont(font);
@@ -65,7 +61,7 @@ int render_pause_menu(sf::RenderWindow &ventana) {
   returnButton.setOrigin(returnButton.getLocalBounds().width / 2,
                          returnButton.getLocalBounds().height / 2);
   returnButton.setPosition(ventana.getSize().x / 2,
-                           resumeButton.getPosition().y + diff_button);
+                           resumeButton.getPosition().y + 75);
 
   sf::Text returnButtonText;
   returnButtonText.setFont(font);
@@ -83,7 +79,7 @@ int render_pause_menu(sf::RenderWindow &ventana) {
   quitButton.setOrigin(quitButton.getLocalBounds().width / 2,
                        quitButton.getLocalBounds().height / 2);
   quitButton.setPosition(ventana.getSize().x / 2,
-                         returnButton.getPosition().y + diff_button);
+                         returnButton.getPosition().y + 75);
 
   sf::Text quitButtonText;
   quitButtonText.setFont(font);
