@@ -10,10 +10,10 @@ std::unordered_map<BirdType, std::pair<std::unique_ptr<sf::Texture>,
 
 Bird::Bird(BirdType birdType, sf::Vector2f pr)
     : type(birdType), pos_resortera(pr) {
-  figura.setRadius(22.0f);
+  figura.setRadius(44.0f);
   figura.setFillColor(sf::Color::Transparent);
   figura.setOutlineThickness(0);
-  figura.setOrigin(22.0f, 22.0f);
+  figura.setOrigin(44.0f, 44.0f);
   figura.setPosition(pos_resortera);
   loadTextures();
 }
@@ -70,7 +70,7 @@ void Bird::loadTextures() {
       idleTexture ? idleTexture : flyingTexture; // sprite
   if (initialTexture) {
     sprite.setTexture(*initialTexture, true);
-    float scale = 44.0f / std::max(initialTexture->getSize().x,
+    float scale = 88.0f / std::max(initialTexture->getSize().x,
                                    initialTexture->getSize().y);
     sprite.setScale(scale, scale);
     sprite.setOrigin(initialTexture->getSize().x / 2.0f,
@@ -85,7 +85,7 @@ void Bird::updateTextureState() {
     return;
 
   sprite.setTexture(*desired, true);
-  float scale = 44.0f / std::max(desired->getSize().x, desired->getSize().y);
+  float scale = 88.0f / std::max(desired->getSize().x, desired->getSize().y);
   sprite.setScale(scale, scale);
   sprite.setOrigin(desired->getSize().x / 2.0f, desired->getSize().y / 2.0f);
 }

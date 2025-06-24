@@ -68,9 +68,14 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   // For the pause menu
   int response = 1;
 
+  sf::Texture backgroundTexture;
+  if (!backgroundTexture.loadFromFile("assets/textures/palacio_gobierno.jpg")) {
+    throw std::runtime_error("Failed to load background texture");
+  }
+
   sf::RectangleShape fondo(
       {static_cast<float>(lev->x_bound), static_cast<float>(lev->y_bound)});
-  fondo.setFillColor({135, 206, 235});
+  fondo.setTexture(&backgroundTexture);
 
   Bird pajaro(birdType, pos_resortera);
   Slingshot resortera(pos_resortera);

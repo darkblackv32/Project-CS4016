@@ -4,6 +4,15 @@
 
 int render_title(sf::RenderWindow &ventana) {
 
+  sf::Texture background_texture;
+  if (!background_texture.loadFromFile("assets/textures/portada_clean.jpg")) {
+    return -1;
+  }
+  sf::Sprite background_sprite(background_texture);
+  background_sprite.setScale(
+      (float)ventana.getSize().x / background_texture.getSize().x,
+      (float)ventana.getSize().y / background_texture.getSize().y);
+
   sf::Font font; // load font
 
   // change font
@@ -111,13 +120,15 @@ int render_title(sf::RenderWindow &ventana) {
         }
       }
     }
-    // update title position for animation
-    float elapsedTime = clock.getElapsedTime().asSeconds();
+
+    // title animation
+    float time = clock.getElapsedTime().asSeconds();
     float newY = titleInitialY +
-                 animationAmplitude * std::sin(elapsedTime * animationSpeed);
+                 std::sin(time * animationSpeed) * animationAmplitude;
     gameTitle.setPosition(gameTitle.getPosition().x, newY);
 
-    ventana.clear(sf::Color(50, 50, 150)); // dark blue background
+    ventana.clear();
+    ventana.draw(background_sprite);
     ventana.draw(gameTitle);
     ventana.draw(startButton);
     ventana.draw(startButtonText);
@@ -127,6 +138,5 @@ int render_title(sf::RenderWindow &ventana) {
     ventana.draw(quitButtonText);
     ventana.display();
   }
-
-  return 1;
+  return 0;
 }

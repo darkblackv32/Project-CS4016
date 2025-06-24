@@ -19,6 +19,14 @@ int extract_number(const std::string &s) {
 Menu::Menu(sf::RenderWindow &window, const std::string &title,
            const std::vector<std::string> &options)
     : window_(window), title_(title), options_(options), current_page_(0) {
+  if (!background_texture_.loadFromFile("assets/textures/portada_clean.jpg")) {
+    std::cout << "Failed to load background image." << std::endl;
+  }
+  background_sprite_.setTexture(background_texture_);
+  background_sprite_.setScale(
+      (float)window.getSize().x / background_texture_.getSize().x,
+      (float)window.getSize().y / background_texture_.getSize().y);
+
   if (!font_.loadFromFile("./assets/fonts/angrybirds-regular.ttf")) {
     std::cout << "Couldn't open font" << std::endl;
     exit(0);
@@ -96,6 +104,7 @@ void Menu::handleInput(const sf::Event &event) {
 }
 
 void Menu::draw() {
+  window_.draw(background_sprite_);
   window_.draw(title_text_);
 
   // Calculate the range of options to display on the current page

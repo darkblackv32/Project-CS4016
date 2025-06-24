@@ -23,6 +23,9 @@ private:
   sf::Sprite button_left_;
   sf::Sprite button_right_;
 
+  sf::Texture background_texture_;
+  sf::Sprite background_sprite_;
+
   int level = -1;
 
 public:
