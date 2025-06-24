@@ -174,7 +174,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       }
     } else if (arrastrando && move == 1) {
       sf::Vector2f mousePos = ventana.mapPixelToCoords(
-          sf::Vector2i(evento.mouseMove.x, evento.mouseMove.y), levelView);
+          sf::Mouse::getPosition(ventana), levelView);
 
       sf::Vector2f delta = previousMousePos - mousePos;
 
@@ -215,8 +215,8 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
 
       // Update lastMousePos for the next frame (important for smooth
       // dragging) We re-map it because the view might have been clamped
-      previousMousePos = ventana.mapPixelToCoords(
-          sf::Vector2i(evento.mouseMove.x, evento.mouseMove.y), levelView);
+      previousMousePos =
+          ventana.mapPixelToCoords(sf::Mouse::getPosition(ventana), levelView);
     }
 
     if (pajaro.lanzado) {
