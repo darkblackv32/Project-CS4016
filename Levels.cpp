@@ -75,7 +75,7 @@ void Level::setFloor(std::vector<sf::Vector2f> &objectSizes,
     // I think this only fits the position
     // Would be good to pick size for the third level
     this->physicsEngine.addHalfSpaceStaticObject(
-        {objectPos[i].first / 2, objectPos[i].second}, {0.0f, -1.0f});
+        {objectPos[i].first / 2, objectPos[i].second - objectSizes[i].y*4 }, {0.0f, -1.0f});
 
     // SFML
     sf::RectangleShape temp(objectSizes[i]);

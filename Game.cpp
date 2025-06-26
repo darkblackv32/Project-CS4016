@@ -260,6 +260,10 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     lev->run(deltaTime);
 
     if (pajaro.lanzado) {
+        pajaro.figura.setPosition(
+                lev->physicsEngine.bodies[birdId].motionState.pos.x,
+                lev->physicsEngine.bodies[birdId].motionState.pos.y);
+
       pajaro.sprite.setPosition(pajaro.figura.getPosition());
 
       std::cout << "Velocity: "
