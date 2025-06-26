@@ -1,5 +1,6 @@
 #pragma once
 
+#include "polyphysics.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <utility>
@@ -10,11 +11,16 @@ struct Level {
   std::vector<sf::RectangleShape> targets;
   std::vector<sf::RectangleShape> floor;
 
+  std::vector<int> object_ids;
+  std::vector<int> targets_ids;
+
   float START_LEVEL_X;
   float START_LEVEL_Y;
 
   int x_bound;
   int y_bound;
+
+  PhysicsEngine physicsEngine;
 
   Level();
   ~Level();
@@ -35,6 +41,9 @@ struct Level {
   void setBounds(float x, float y);
 
   void render(sf::RenderWindow &ventana);
+  void run(float deltaTime);
+
+  void update();
 };
 
 Level *return_level(int level, int width, int height);

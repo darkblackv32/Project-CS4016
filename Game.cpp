@@ -9,12 +9,12 @@
 #include "Pause.h"
 #include "Physics.h"
 #include "Slingshot.h"
+#include "polyphysics.h"
 #include <vector>
 
 #include <SFML/Audio.hpp>
 
 const float TRAJECTORY_STEP = 0.0001f;
-const float GRAVITY = 0.08f;
 
 void playBirdSound(BirdType birdType) {
   static sf::SoundBuffer mileiBuffer;
@@ -80,8 +80,10 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   Bird pajaro(birdType, pos_resortera);
   Slingshot resortera(pos_resortera);
 
-  float ground_y = lev->y_bound - 2 * BLOCK;
   float deltaTime = 1.0f / 60.0f;
+
+  // Used to save the id of the thrown bird
+  int birdId = 0;
 
   sf::Font font;
   if (!font.loadFromFile("assets/fonts/arial-font/arial.ttf")) {
@@ -94,6 +96,9 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       "Press 1-3 to change bird: 1=Default, 2=Milei, 3=Fujimori", font, 16);
   instructionText.setPosition(10, 10);
   instructionText.setFillColor(sf::Color::Black);
+
+  // Reloj para medir el tiempo delta (deltaTime)
+  sf::Clock deltaClock;
 
   while (ventana.isOpen()) {
     sf::Event evento;
@@ -136,12 +141,38 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       if (evento.type == sf::Event::MouseButtonReleased && arrastrando) {
         arrastrando = false;
         if (move == 0) {
+          std::cout << "Activate pajaro lanzado" << std::endl;
           pajaro.lanzado = true;
+
+          sf::Vector2f direccion = pos_resortera - pajaro.figura.getPosition();
+
+          std::cout << "Direction: " << direccion.x << ", " << direccion.y
+                    << std::endl;
+          // create circle object in the physics engine
+          birdId = lev->physicsEngine.addBody(
+              {pajaro.figura.getPosition().x, pajaro.figura.getPosition().y},
+              createCircleCollider(BIRD_RADIUS));
+          lev->physicsEngine.bodies[birdId].elasticity = 0.4f;
+
+          std::cout << "Pos: "
+                    << lev->physicsEngine.bodies[birdId].motionState.pos.x
+                    << ", "
+                    << lev->physicsEngine.bodies[birdId].motionState.pos.y
+                    << std::endl;
+
+          // sets velocity
+          // check if it works
+          lev->physicsEngine.bodies[birdId].motionState.velocity = {
+              direccion.x * FUERZA_MULTIPLICADOR,
+              direccion.y * FUERZA_MULTIPLICADOR};
+          std::cout << "First velocity: "
+                    << lev->physicsEngine.bodies[birdId].motionState.velocity.x
+                    << ", "
+                    << lev->physicsEngine.bodies[birdId].motionState.velocity.y
+                    << std::endl;
 
           pajaro.updateTextureState();
 
-          sf::Vector2f direccion = pos_resortera - pajaro.figura.getPosition();
-          pajaro.velocidad = direccion * FUERZA_MULTIPLICADOR;
           // sound
           playBirdSound(pajaro.getBirdType());
         }
@@ -173,13 +204,13 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       try {
         trayectoria = Physics::calcularTrayectoria(
             nuevaPos, (pos_resortera - nuevaPos) * FUERZA_MULTIPLICADOR,
-            TRAJECTORY_STEP, GRAVITY);
+            TRAJECTORY_STEP, GRAVEDAD);
       } catch (...) {
         trayectoria.clear();
       }
     } else if (arrastrando && move == 1) {
-      sf::Vector2f mousePos = ventana.mapPixelToCoords(
-          sf::Mouse::getPosition(ventana), levelView);
+      sf::Vector2f mousePos =
+          ventana.mapPixelToCoords(sf::Mouse::getPosition(ventana), levelView);
 
       sf::Vector2f delta = previousMousePos - mousePos;
 
@@ -224,31 +255,49 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
           ventana.mapPixelToCoords(sf::Mouse::getPosition(ventana), levelView);
     }
 
+    // Actualizacion de fisica
+    float deltaTime = deltaClock.restart().asSeconds();
+    lev->run(deltaTime);
+
     if (pajaro.lanzado) {
-      pajaro.updatePhysics(deltaTime);
+      pajaro.sprite.setPosition(pajaro.figura.getPosition());
 
-      if (pajaro.figura.getPosition().y + pajaro.figura.getRadius() >
-          ground_y) {
-        Physics::handleGroundCollision(pajaro.figura, pajaro.velocidad,
-                                       ground_y);
-        if (pajaro.sprite.getTexture()) {
-          pajaro.sprite.setPosition(pajaro.figura.getPosition());
-        }
-      }
+      std::cout << "Velocity: "
+                << lev->physicsEngine.bodies[birdId].motionState.velocity.x
+                << ", "
+                << lev->physicsEngine.bodies[birdId].motionState.velocity.y
+                << std::endl;
+      std::cout << "Acceleration: "
+                << lev->physicsEngine.bodies[birdId].motionState.acceleration.x
+                << ", "
+                << lev->physicsEngine.bodies[birdId].motionState.acceleration.y
+                << std::endl;
+      std::cout << "Pos: "
+                << lev->physicsEngine.bodies[birdId].motionState.pos.x << ", "
+                << lev->physicsEngine.bodies[birdId].motionState.pos.y
+                << std::endl;
 
-      if (std::abs(pajaro.velocidad.x) < 15.0f &&
-          std::abs(pajaro.velocidad.y) < 15.0f &&
-          pajaro.figura.getPosition().y + pajaro.figura.getRadius() >=
-              ground_y - 0.1f) {
+      // must freeze before
+      // if (lev->physicsEngine.bodies[birdId].motionState.velocity.x <
+      //     THRESHOLD_FREEZE) {
+      //   lev->physicsEngine.bodies[birdId].flags.setFreezeX();
+      // }
+      // if (lev->physicsEngine.bodies[birdId].motionState.velocity.y <
+      //     THRESHOLD_FREEZE) {
+      //   lev->physicsEngine.bodies[birdId].flags.setFreezeY();
+      // }
+
+      // Also considers if the bird goes beyond the limits
+      if (lev->physicsEngine.bodies[birdId].flags.isFreezePosition() ||
+          pajaro.figura.getPosition().x < -100.0f ||
+          pajaro.figura.getPosition().x > lev->x_bound + 100.0f ||
+          pajaro.figura.getPosition().y > lev->y_bound + 100.0f) {
+        // resets the variable
         pajaro.reset();
         arrastrando = false; // reset arrastrando flag
-      }
-
-      if (pajaro.figura.getPosition().x < -100.0f ||
-          pajaro.figura.getPosition().x > width + 100.0f ||
-          pajaro.figura.getPosition().y > height + 100.0f) {
-        pajaro.reset();
-        arrastrando = false; // Reset arrastrando flag
+        // removes the bird from the physics engine and removes the bird id
+        lev->physicsEngine.bodies.erase(birdId);
+        birdId = 0;
       }
     }
 
@@ -257,10 +306,13 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     ventana.setView(levelView);
 
     ventana.draw(fondo);
+
+    resortera.draw(ventana);
+
+    // renders the objects and update them according to the bodies
     if (lev) {
       lev->render(ventana);
     }
-    resortera.draw(ventana);
 
     if ((arrastrando || !pajaro.lanzado) && move == 0) {
       resortera.updateBands(pajaro.figura.getPosition(), arrastrando);

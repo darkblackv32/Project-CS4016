@@ -1,6 +1,5 @@
 #include "Bird.h"
 #include "Constants.h"
-#include "Physics.h"
 #include <iostream>
 
 // static cache
@@ -10,7 +9,7 @@ std::unordered_map<BirdType, std::pair<std::unique_ptr<sf::Texture>,
 
 Bird::Bird(BirdType birdType, sf::Vector2f pr)
     : type(birdType), pos_resortera(pr) {
-  figura.setRadius(44.0f);
+  figura.setRadius(BIRD_RADIUS);
   figura.setFillColor(sf::Color::Transparent);
   figura.setOutlineThickness(0);
   figura.setOrigin(44.0f, 44.0f);
@@ -88,13 +87,6 @@ void Bird::updateTextureState() {
   float scale = 88.0f / std::max(desired->getSize().x, desired->getSize().y);
   sprite.setScale(scale, scale);
   sprite.setOrigin(desired->getSize().x / 2.0f, desired->getSize().y / 2.0f);
-}
-
-void Bird::updatePhysics(float deltaTime) {
-  Physics::applyAirResistance(velocidad, deltaTime);
-  velocidad.y += GRAVEDAD * deltaTime;
-  figura.move(velocidad * deltaTime);
-  sprite.setPosition(figura.getPosition());
 }
 
 void Bird::reset() {

@@ -24,7 +24,6 @@ struct Bird {
 
   Bird(BirdType birdType = BirdType::DEFAULT,
        sf::Vector2f pr = sf::Vector2f(100.0f, 470.0f));
-  void updatePhysics(float deltaTime);
   void reset();
   void loadTextures();
   void updateTextureState();

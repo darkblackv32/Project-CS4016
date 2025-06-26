@@ -9,7 +9,11 @@
 int WIDTH = 800;
 int HEIGHT = 600;
 
-Level::Level() {}
+Level::Level() {
+  // Inicializa la gravedad del nivel
+  physicsEngine.simulationPhysicsSettings.gravity = {0.0f, GRAVEDAD};
+}
+
 Level::~Level() {}
 
 void Level::setObjects(std::vector<sf::Vector2f> &objectSizes,
@@ -18,13 +22,23 @@ void Level::setObjects(std::vector<sf::Vector2f> &objectSizes,
 
   std::vector<sf::RectangleShape> objects;
   for (int i = 0; i < objectSizes.size(); i++) {
+    // SFML
     sf::RectangleShape temp(objectSizes[i]);
     temp.setPosition(objectPos[i].first, objectPos[i].second);
     temp.setFillColor(objectColors[i]);
     temp.setOutlineColor({170, 143, 24});
-    temp.setOutlineThickness(1.0f);
+    temp.setOutlineThickness(LINE_THICKNESS);
 
     objects.push_back(temp);
+
+    // Physics
+    auto boxId = physicsEngine.addBody(
+        {objectPos[i].first, objectPos[i].second},
+        createBoxCollider({objectSizes[i].x, objectSizes[i].y}));
+    physicsEngine.bodies[boxId].elasticity = ELASTICIDAD_BLOCK;
+    physicsEngine.bodies[boxId].staticFriction = STATIC_FRICTION_BLOCK;
+
+    this->object_ids.push_back(boxId);
   }
 
   this->objects = objects;
@@ -36,11 +50,15 @@ void Level::setTargets(std::vector<sf::Vector2f> &objectSizes,
 
   std::vector<sf::RectangleShape> objects;
   for (int i = 0; i < objectSizes.size(); i++) {
+    // SFML
     sf::RectangleShape temp(objectSizes[i]);
     temp.setPosition(objectPos[i].first, objectPos[i].second);
     temp.setFillColor(objectColors[i]);
 
     objects.push_back(temp);
+
+    // Physics
+    // TODO
   }
 
   this->targets = objects;
@@ -52,7 +70,16 @@ void Level::setFloor(std::vector<sf::Vector2f> &objectSizes,
 
   std::vector<sf::RectangleShape> objects;
   for (int i = 0; i < objectSizes.size(); i++) {
+    // Physics
+    // This uses half space
+    // I think this only fits the position
+    // Would be good to pick size for the third level
+    this->physicsEngine.addHalfSpaceStaticObject(
+        {objectPos[i].first / 2, objectPos[i].second}, {0.0f, -1.0f});
+
+    // SFML
     sf::RectangleShape temp(objectSizes[i]);
+    // temp.setPosition(objectPos[i].first, objectPos[i].second);
     temp.setPosition(objectPos[i].first, objectPos[i].second);
     temp.setFillColor(objectColors[i]);
 
@@ -73,15 +100,40 @@ void Level::setBounds(float x, float y) {
 }
 
 void Level::render(sf::RenderWindow &ventana) {
+  // Renders the objects and also updates their positions according to the
+  // physics bodies
   for (int i = 0; i < this->floor.size(); i++) {
     ventana.draw(this->floor[i]);
   }
-  for (int i = 0; i < this->objects.size(); i++) {
+
+  for (int i = 0; i < this->object_ids.size(); i++) {
+    const ph2dBodyId id = object_ids[i];
+    const Body &body = physicsEngine.bodies[object_ids[i]];
+
+    // Creo que no nos debemos preocupar por verificar que sea nuevo debido a
+    // que no hay forma de añadir objetos actualmente
+    // Esta seteando el origen al centro en el codigo de ejemplo.
+    // Verificar si crea problemas
+    this->objects[i].setOrigin(this->objects[i].getSize().x / 2.f,
+                               this->objects[i].getSize().y / 2.f);
+
+    // Actualiza la posición y rotación de la forma visual
+    this->objects[i].setPosition(
+        {body.motionState.pos.x, body.motionState.pos.y});
+    // Tu motor usa radianes, SFML usa grados. ¡Hay que convertir!
+    // Verificar esto. Viene del codigo de ejemplo
+    this->objects[i].setRotation(Math::degrees(body.motionState.rotation));
     ventana.draw(this->objects[i]);
   }
+
   for (int i = 0; i < this->targets.size(); i++) {
     ventana.draw(this->targets[i]);
+    // TODO
   }
+}
+
+void Level::run(float deltaTime) {
+  this->physicsEngine.runSimulation(deltaTime);
 }
 
 Level *return_level(int level, int width, int height) {
