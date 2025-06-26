@@ -1,14 +1,28 @@
+#include "Title.h"
 #include <SFML/Graphics.hpp>
 #include <cmath>
 
 int render_title(sf::RenderWindow &ventana) {
 
-  sf::Font font;   // load font
+  sf::Texture background_texture;
+  if (!background_texture.loadFromFile("assets/textures/portada_clean.jpg")) {
+    return -1;
+  }
+  sf::Sprite background_sprite(background_texture);
+  background_sprite.setScale(
+      (float)ventana.getSize().x / background_texture.getSize().x,
+      (float)ventana.getSize().y / background_texture.getSize().y);
+
+  sf::Font font; // load font
 
   // change font
   if (!font.loadFromFile("./assets/fonts/angrybirds-regular.ttf")) {
     return -1;
   }
+
+  // blueish color
+  auto button_color = sf::Color(100, 100, 250);
+  int box_width = 300;
 
   // game title
   sf::Text gameTitle;
@@ -21,12 +35,12 @@ int render_title(sf::RenderWindow &ventana) {
   gameTitle.setPosition(ventana.getSize().x / 2, ventana.getSize().y / 4);
 
   // start button
-  sf::RectangleShape startButton(sf::Vector2f(200, 70));
-  startButton.setFillColor(sf::Color(100, 100, 250)); // blueish color
+  sf::RectangleShape startButton(sf::Vector2f(box_width, 70));
+  startButton.setFillColor(button_color);
   startButton.setOrigin(startButton.getLocalBounds().width / 2,
                         startButton.getLocalBounds().height / 2);
   startButton.setPosition(ventana.getSize().x / 2,
-                          ventana.getSize().y / 2 + 100);
+                          ventana.getSize().y / 3 + 100);
 
   sf::Text startButtonText;
   startButtonText.setFont(font);
@@ -36,6 +50,42 @@ int render_title(sf::RenderWindow &ventana) {
   startButtonText.setOrigin(startButtonText.getLocalBounds().width / 2,
                             startButtonText.getLocalBounds().height / 2);
   startButtonText.setPosition(startButton.getPosition());
+
+  // menu button
+  sf::RectangleShape menuButton(sf::Vector2f(box_width, 70));
+  menuButton.setFillColor(button_color);
+  menuButton.setOrigin(menuButton.getLocalBounds().width / 2,
+                       menuButton.getLocalBounds().height / 2);
+  menuButton.setPosition(ventana.getSize().x / 2,
+                         startButton.getPosition().y + 100 +
+                             startButton.getLocalBounds().getSize().y);
+
+  sf::Text menuButtonText;
+  menuButtonText.setFont(font);
+  menuButtonText.setString("Level selection");
+  menuButtonText.setCharacterSize(36);
+  menuButtonText.setFillColor(sf::Color::White);
+  menuButtonText.setOrigin(menuButtonText.getLocalBounds().width / 2,
+                           menuButtonText.getLocalBounds().height / 2);
+  menuButtonText.setPosition(menuButton.getPosition());
+
+  // quit button
+  sf::RectangleShape quitButton(sf::Vector2f(box_width, 70));
+  quitButton.setFillColor(button_color);
+  quitButton.setOrigin(quitButton.getLocalBounds().width / 2,
+                       quitButton.getLocalBounds().height / 2);
+  quitButton.setPosition(ventana.getSize().x / 2,
+                         menuButton.getPosition().y + 100 +
+                             menuButton.getLocalBounds().getSize().y);
+
+  sf::Text quitButtonText;
+  quitButtonText.setFont(font);
+  quitButtonText.setString("Quit");
+  quitButtonText.setCharacterSize(36);
+  quitButtonText.setFillColor(sf::Color::White);
+  quitButtonText.setOrigin(quitButtonText.getLocalBounds().width / 2,
+                           quitButtonText.getLocalBounds().height / 2);
+  quitButtonText.setPosition(quitButton.getPosition());
 
   // clock for title animation
   sf::Clock clock;
@@ -58,22 +108,35 @@ int render_title(sf::RenderWindow &ventana) {
             // start the game
             // continue the game
             return 1;
+          } else if (menuButton.getGlobalBounds().contains(
+                         static_cast<float>(event.mouseButton.x),
+                         static_cast<float>(event.mouseButton.y))) {
+            return 2;
+          } else if (quitButton.getGlobalBounds().contains(
+                         static_cast<float>(event.mouseButton.x),
+                         static_cast<float>(event.mouseButton.y))) {
+            return 3;
           }
         }
       }
     }
-    // update title position for animation
-    float elapsedTime = clock.getElapsedTime().asSeconds();
+
+    // title animation
+    float time = clock.getElapsedTime().asSeconds();
     float newY = titleInitialY +
-                 animationAmplitude * std::sin(elapsedTime * animationSpeed);
+                 std::sin(time * animationSpeed) * animationAmplitude;
     gameTitle.setPosition(gameTitle.getPosition().x, newY);
 
-    ventana.clear(sf::Color(50, 50, 150)); // dark blue background
+    ventana.clear();
+    ventana.draw(background_sprite);
     ventana.draw(gameTitle);
     ventana.draw(startButton);
     ventana.draw(startButtonText);
+    ventana.draw(menuButton);
+    ventana.draw(menuButtonText);
+    ventana.draw(quitButton);
+    ventana.draw(quitButtonText);
     ventana.display();
   }
-
-  return 1;
+  return 0;
 }
