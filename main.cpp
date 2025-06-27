@@ -9,7 +9,7 @@ int main() {
   int height = 600;
   sf::RenderWindow ventana(sf::VideoMode(width, height),
                            "Angry Birds Ultimate");
-  ventana.setFramerateLimit(60);
+  ventana.setFramerateLimit(120);
 
   // Start with title screen
   int gameState = 0; // 0 = title screen, 1 = game

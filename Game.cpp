@@ -9,6 +9,7 @@
 #include "Pause.h"
 #include "Physics.h"
 #include "Slingshot.h"
+#include "helper.h"
 #include "polyphysics.h"
 #include <vector>
 
@@ -49,7 +50,6 @@ void playBirdSound(BirdType birdType) {
 int render_bird_game(sf::RenderWindow &ventana, int level, int width,
                      int height, BirdType birdType) {
   bool arrastrando = false;
-  sf::Vector2f clickOffset;
   std::vector<sf::Vector2f> trayectoria;
 
   Level *lev = return_level(level, width, height);
@@ -57,13 +57,17 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     return -1;
   }
 
-  sf::View levelView(sf::FloatRect(0, 0, 800, 600));
+  // this is set the the ventana size, so this could cause some problems
+  // Currently it matches the width of the window
+  sf::View levelView(sf::FloatRect(0, 0, 800, ventana.getSize().y));
+  std::cout << ventana.getSize().x << ", " << ventana.getSize().y << std::endl;
   sf::FloatRect levelBounds(0, 0, lev->x_bound, lev->y_bound);
   sf::Vector2f previousMousePos;
-  sf::Vector2f pos_resortera(100.0f, lev->y_bound - 130.0f);
+  sf::Vector2f clickOffset;
+  sf::Vector2f pos_resortera(100.0f, lev->y_bound - 200.0f);
   // move represents 0 for the bird and 1 for the camera
-  levelView.setCenter(lev->x_bound / 2, lev->y_bound / 2);
-  int move = 0;
+  levelView.setCenter(lev->x_bound / 2.0f, lev->y_bound / 2.0f);
+  int move = -1;
 
   // For the pause menu
   int response = 1;
@@ -80,10 +84,18 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   Bird pajaro(birdType, pos_resortera);
   Slingshot resortera(pos_resortera);
 
-  float deltaTime = 1.0f / 60.0f;
-
-  // Used to save the id of the thrown bird
+  // initializatin for physics for the bird.
+  auto bird_original_pos = {pajaro.figura.getPosition().x,
+                            pajaro.figura.getPosition().y};
   int birdId = 0;
+  birdId = lev->physicsEngine.addBody(
+      {pajaro.figura.getPosition().x, pajaro.figura.getPosition().y},
+      createCircleCollider(pajaro.figura.getRadius()));
+  lev->physicsEngine.bodies[birdId].elasticity = 0.5f;
+  // Hacemos al pájaro más pesado
+  lev->physicsEngine.bodies[birdId].motionState.mass = 20.f;
+  // Lo hacemos cinemático hasta que se lance
+  lev->physicsEngine.bodies[birdId].flags.setKinematic(true);
 
   sf::Font font;
   if (!font.loadFromFile("assets/fonts/arial-font/arial.ttf")) {
@@ -121,50 +133,54 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
         }
       }
 
-      if (evento.type == sf::Event::MouseButtonPressed) {
-        sf::Vector2f mousePos =
+      if (evento.type == sf::Event::MouseButtonPressed &&
+          evento.mouseButton.button == sf::Mouse::Left) {
+        sf::Vector2f mousePos = ventana.mapPixelToCoords(
+            sf::Vector2i(evento.mouseButton.x, evento.mouseButton.y),
+            levelView);
+
+        sf::Vector2f mousePosOld =
             ventana.mapPixelToCoords(sf::Mouse::getPosition(ventana));
+
         if (pajaro.figura.getGlobalBounds().contains(mousePos) &&
-            !pajaro.lanzado) {
+            lev->physicsEngine.bodies[birdId].flags.isKinematic()) {
           arrastrando = true;
+          previousMousePos = mousePos;
           clickOffset = pajaro.figura.getPosition() - mousePos;
           move = 0;
-        } else if (evento.mouseButton.button == sf::Mouse::Left) {
+        } else {
           arrastrando = true;
-          previousMousePos = ventana.mapPixelToCoords(
-              sf::Vector2i(evento.mouseButton.x, evento.mouseButton.y),
-              levelView);
+          previousMousePos = mousePos;
           move = 1;
         }
       }
 
-      if (evento.type == sf::Event::MouseButtonReleased && arrastrando) {
+      if (evento.type == sf::Event::MouseButtonReleased &&
+          evento.mouseButton.button == sf::Mouse::Left && arrastrando) {
         arrastrando = false;
         if (move == 0) {
           std::cout << "Activate pajaro lanzado" << std::endl;
-          pajaro.lanzado = true;
 
-          sf::Vector2f direccion = pos_resortera - pajaro.figura.getPosition();
+          sf::Vector2f dragEndPos = ventana.mapPixelToCoords(
+              sf::Vector2i(evento.mouseButton.x, evento.mouseButton.y),
+              levelView);
+          sf::Vector2f dragVector = sf::Vector2f(previousMousePos - dragEndPos);
 
-          std::cout << "Direction: " << direccion.x << ", " << direccion.y
-                    << std::endl;
-          // create circle object in the physics engine
-          birdId = lev->physicsEngine.addBody(
-              {pajaro.figura.getPosition().x, pajaro.figura.getPosition().y},
-              createCircleCollider(BIRD_RADIUS));
-          lev->physicsEngine.bodies[birdId].elasticity = 0.4f;
-
-          std::cout << "Pos: "
-                    << lev->physicsEngine.bodies[birdId].motionState.pos.x
-                    << ", "
-                    << lev->physicsEngine.bodies[birdId].motionState.pos.y
+          std::cout << "drag vector: " << dragVector.x << ", " << dragVector.y
                     << std::endl;
 
-          // sets velocity
-          // check if it works
-          lev->physicsEngine.bodies[birdId].motionState.velocity = {
-              direccion.x * FUERZA_MULTIPLICADOR,
-              direccion.y * FUERZA_MULTIPLICADOR};
+          // Change physics to work
+          // Works, however it's rather slow. Play with the factor, to make it
+          // go fast. Move the resortera to be higher too, so that we can make
+          // use of the full power of resortera. Make the bird smaller perhaps
+          // Moves instantly too sometimes so something isn't updated on time
+          // All of the building falls together. The floor be dammed
+          // TODO
+          float factor = 4.f;
+          lev->physicsEngine.bodies[birdId].flags.setKinematic(false);
+          lev->physicsEngine.bodies[birdId].motionState.velocity =
+              fromSfmlVec(dragVector) * factor;
+
           std::cout << "First velocity: "
                     << lev->physicsEngine.bodies[birdId].motionState.velocity.x
                     << ", "
@@ -175,6 +191,8 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
 
           // sound
           playBirdSound(pajaro.getBirdType());
+
+          pajaro.lanzado = true;
         }
       }
     }
@@ -197,11 +215,16 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       }
 
       pajaro.figura.setPosition(nuevaPos);
+      lev->physicsEngine.bodies[birdId].motionState.setPos(
+          fromSfmlVec(nuevaPos));
+
       if (pajaro.sprite.getTexture()) {
         pajaro.sprite.setPosition(nuevaPos);
       }
 
       try {
+        // Fix to work according to the new physics
+        // TODO
         trayectoria = Physics::calcularTrayectoria(
             nuevaPos, (pos_resortera - nuevaPos) * FUERZA_MULTIPLICADOR,
             TRAJECTORY_STEP, GRAVEDAD);
@@ -255,14 +278,14 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
           ventana.mapPixelToCoords(sf::Mouse::getPosition(ventana), levelView);
     }
 
-    // Actualizacion de fisica
+    // --- ACTUALIZACIÓN DE LA FÍSICA ---
     float deltaTime = deltaClock.restart().asSeconds();
     lev->run(deltaTime);
 
     if (pajaro.lanzado) {
-        pajaro.figura.setPosition(
-                lev->physicsEngine.bodies[birdId].motionState.pos.x,
-                lev->physicsEngine.bodies[birdId].motionState.pos.y);
+      pajaro.figura.setPosition(
+          lev->physicsEngine.bodies[birdId].motionState.pos.x,
+          lev->physicsEngine.bodies[birdId].motionState.pos.y);
 
       pajaro.sprite.setPosition(pajaro.figura.getPosition());
 
@@ -281,27 +304,52 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
                 << lev->physicsEngine.bodies[birdId].motionState.pos.y
                 << std::endl;
 
-      // must freeze before
-      // if (lev->physicsEngine.bodies[birdId].motionState.velocity.x <
-      //     THRESHOLD_FREEZE) {
-      //   lev->physicsEngine.bodies[birdId].flags.setFreezeX();
-      // }
-      // if (lev->physicsEngine.bodies[birdId].motionState.velocity.y <
-      //     THRESHOLD_FREEZE) {
-      //   lev->physicsEngine.bodies[birdId].flags.setFreezeY();
-      // }
-
       // Also considers if the bird goes beyond the limits
-      if (lev->physicsEngine.bodies[birdId].flags.isFreezePosition() ||
+      if ((lev->physicsEngine.bodies[birdId].motionState.velocity.x <
+               THRESHOLD_STOP &&
+           lev->physicsEngine.bodies[birdId].motionState.velocity.y <
+               THRESHOLD_STOP) ||
           pajaro.figura.getPosition().x < -100.0f ||
           pajaro.figura.getPosition().x > lev->x_bound + 100.0f ||
           pajaro.figura.getPosition().y > lev->y_bound + 100.0f) {
         // resets the variable
         pajaro.reset();
-        arrastrando = false; // reset arrastrando flag
         // removes the bird from the physics engine and removes the bird id
-        lev->physicsEngine.bodies.erase(birdId);
-        birdId = 0;
+        lev->physicsEngine.bodies[birdId].motionState.setPos(
+            fromSfmlVec(pajaro.figura.getPosition()));
+      }
+
+      // --- LÓGICA DEL JUEGO (POST-FÍSICA) ---
+      // Implementación de la reacción en cadena
+
+      std::vector<ph2dBodyId> bodiesToWakeUp;
+      for (const auto &manifold : lev->physicsEngine.intersections) {
+        Body &bodyA = lev->physicsEngine.bodies[manifold.A];
+        Body &bodyB = lev->physicsEngine.bodies[manifold.B];
+
+        // Si un cuerpo dinámico choca con uno cinemático de la estructura, lo
+        // despertamos.
+        if (!bodyA.flags.isKinematic() && bodyB.flags.isKinematic()) {
+          for (auto structureId : lev->object_ids) {
+            if (manifold.B == structureId) {
+              bodiesToWakeUp.push_back(manifold.B);
+              break;
+            }
+          }
+        }
+        if (!bodyB.flags.isKinematic() && bodyA.flags.isKinematic()) {
+          for (auto structureId : lev->object_ids) {
+            if (manifold.A == structureId) {
+              bodiesToWakeUp.push_back(manifold.A);
+              break;
+            }
+          }
+        }
+      }
+
+      // Activamos todos los cuerpos que deben despertar
+      for (auto id : bodiesToWakeUp) {
+        lev->physicsEngine.bodies[id].flags.setKinematic(false);
       }
     }
 
@@ -311,12 +359,11 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
 
     ventana.draw(fondo);
 
-    resortera.draw(ventana);
-
     // renders the objects and update them according to the bodies
     if (lev) {
       lev->render(ventana);
     }
+    resortera.draw(ventana);
 
     if ((arrastrando || !pajaro.lanzado) && move == 0) {
       resortera.updateBands(pajaro.figura.getPosition(), arrastrando);

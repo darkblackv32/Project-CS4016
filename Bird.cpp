@@ -11,8 +11,7 @@ Bird::Bird(BirdType birdType, sf::Vector2f pr)
     : type(birdType), pos_resortera(pr) {
   figura.setRadius(BIRD_RADIUS);
   figura.setFillColor(sf::Color::Transparent);
-  figura.setOutlineThickness(0);
-  figura.setOrigin(44.0f, 44.0f);
+  figura.setOrigin(figura.getRadius(), figura.getRadius());
   figura.setPosition(pos_resortera);
   loadTextures();
 }
