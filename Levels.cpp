@@ -1,5 +1,6 @@
 #include "Levels.h"
 #include "Constants.h"
+#include "helper.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <iostream>
@@ -9,9 +10,8 @@
 int WIDTH = 800;
 int HEIGHT = 600;
 
-Level::Level() {
+Level::Level() : m_physics(b2Vec2(0.0f, 9.8f)) {
   // Inicializa la gravedad del nivel
-  physicsEngine.simulationPhysicsSettings.gravity = {0.0f, GRAVEDAD};
 }
 
 Level::~Level() {}
@@ -22,26 +22,65 @@ void Level::setObjects(std::vector<sf::Vector2f> &objectSizes,
 
   std::vector<sf::RectangleShape> objects;
   for (int i = 0; i < objectSizes.size(); i++) {
+    // Physics
+    b2Body *temp_body = createBox(objectPos[i].first, objectPos[i].first,
+                                  objectSizes[i].x / 2, objectSizes[i].y / 2);
     // SFML
-    sf::RectangleShape temp(objectSizes[i]);
-    temp.setPosition(objectPos[i].first, objectPos[i].second);
+    b2Fixture *fixture = temp_body->GetFixtureList();
+    b2Shape::Type shapeType = fixture->GetType();
+    sf::Vector2f pos = metersToPixels(temp_body->GetPosition());
+    float angle = temp_body->GetAngle() * 180.f / b2_pi;
+
+    b2PolygonShape *poly = (b2PolygonShape *)fixture->GetShape();
+    // Asumimos que es una caja creada con SetAsBox
+    b2Vec2 halfSize = poly->m_vertices[2];
+
+    sf::RectangleShape temp(
+        sf::Vector2f(halfSize.x * 2 * SCALE, halfSize.y * 2 * SCALE));
+    temp.setOrigin(temp.getSize().x / 2.f, temp.getSize().y / 2.f);
+    temp.setPosition(pos);
+    temp.setRotation(angle);
     temp.setFillColor(objectColors[i]);
     temp.setOutlineColor({170, 143, 24});
     temp.setOutlineThickness(LINE_THICKNESS);
 
     objects.push_back(temp);
-
-    // Physics
-    auto boxId = physicsEngine.addBody(
-        {objectPos[i].first, objectPos[i].second},
-        createBoxCollider({objectSizes[i].x, objectSizes[i].y}));
-    physicsEngine.bodies[boxId].elasticity = ELASTICIDAD_BLOCK;
-    physicsEngine.bodies[boxId].staticFriction = STATIC_FRICTION_BLOCK;
-
-    this->object_ids.push_back(boxId);
   }
 
   this->objects = objects;
+}
+
+b2Body *Level::createBox(float x, float y, float halfWidth, float halfHeight) {
+  b2BodyDef bodyDef;
+  bodyDef.type = b2_dynamicBody;
+  bodyDef.position.Set(x / SCALE, y / SCALE);
+  b2Body *boxBody = m_physics.CreateBody(&bodyDef);
+
+  m_physics.CreateBoxFixture(boxBody, halfWidth / SCALE, halfHeight / SCALE,
+                             1.0f);
+  m_bodies.push_back(boxBody);
+
+  boxBody->SetSleepingAllowed(true);
+  boxBody->SetAwake(false);
+
+  return boxBody;
+}
+
+b2Body *Level::createBird(const sf::Vector2f &pos, float radius) {
+  b2Body *m_birdBody = nullptr;
+  b2BodyDef birdBodyDef;
+  birdBodyDef.type = b2_dynamicBody;
+  birdBodyDef.position.Set(pos.x / SCALE, pos.y / SCALE);
+  m_birdBody = m_physics.CreateBody(&birdBodyDef);
+
+  b2CircleShape circleShape;
+  circleShape.m_radius = radius / SCALE;
+  m_physics.CreateCircleFixture(m_birdBody, &circleShape, 2.0f);
+
+  m_birdBody->SetSleepingAllowed(true);
+  m_birdBody->SetAwake(false);
+
+  return m_birdBody;
 }
 
 void Level::setTargets(std::vector<sf::Vector2f> &objectSizes,
@@ -71,14 +110,22 @@ void Level::setFloor(std::vector<sf::Vector2f> &objectSizes,
   std::vector<sf::RectangleShape> objects;
   for (int i = 0; i < objectSizes.size(); i++) {
     // Physics
-    // This uses half space
-    // I think this only fits the position
-    // Would be good to pick size for the third level
-    this->physicsEngine.addHalfSpaceStaticObject(
-        {objectPos[i].first / 2, objectPos[i].second - objectSizes[i].y*4 }, {0.0f, -1.0f});
+    b2Body *temp_static = nullptr;
+    b2BodyDef groundBodyDef;
+    // Consider the conversion from origin point at the top left to the center
+    groundBodyDef.position.Set(
+        (objectPos[i].first + objectSizes[i].x / 2.0f) / SCALE,
+        (objectPos[i].second + objectSizes[i].y / 2.0f) / SCALE);
+    temp_static = m_physics.CreateBody(&groundBodyDef);
+    b2PolygonShape groundBox;
+    groundBox.SetAsBox(objectSizes[i].x / 2.f / SCALE,
+                       objectSizes[i].y / SCALE);
+    temp_static->CreateFixture(&groundBox, 0.0f);
+    m_static.push_back(temp_static);
 
     // SFML
     sf::RectangleShape temp(objectSizes[i]);
+    temp.setPosition(objectPos[i].first, objectPos[i].second);
     // temp.setPosition(objectPos[i].first, objectPos[i].second);
     temp.setPosition(objectPos[i].first, objectPos[i].second);
     temp.setFillColor(objectColors[i]);
@@ -106,34 +153,45 @@ void Level::render(sf::RenderWindow &ventana) {
     ventana.draw(this->floor[i]);
   }
 
-  for (int i = 0; i < this->object_ids.size(); i++) {
-    const ph2dBodyId id = object_ids[i];
-    const Body &body = physicsEngine.bodies[object_ids[i]];
+  for (int i = 0; i < this->m_bodies.size(); i++) {
+    b2Body *body = m_bodies[i];
+    b2Fixture *fixture = body->GetFixtureList();
+    while (fixture) {
+      b2Shape::Type shapeType = fixture->GetType();
+      sf::Vector2f pos = metersToPixels(body->GetPosition());
+      float angle = body->GetAngle() * 180.f / b2_pi;
 
-    // Creo que no nos debemos preocupar por verificar que sea nuevo debido a
-    // que no hay forma de añadir objetos actualmente
-    // Esta seteando el origen al centro en el codigo de ejemplo.
-    // Verificar si crea problemas
-    this->objects[i].setOrigin(this->objects[i].getSize().x / 2.f,
-                               this->objects[i].getSize().y / 2.f);
+      b2PolygonShape *poly = (b2PolygonShape *)fixture->GetShape();
+      // Asumimos que es una caja creada con SetAsBox
+      b2Vec2 halfSize = poly->m_vertices[2];
 
-    // Actualiza la posición y rotación de la forma visual
-    this->objects[i].setPosition(
-        {body.motionState.pos.x, body.motionState.pos.y});
-    // Tu motor usa radianes, SFML usa grados. ¡Hay que convertir!
-    // Verificar esto. Viene del codigo de ejemplo
-    this->objects[i].setRotation(Math::degrees(body.motionState.rotation));
-    ventana.draw(this->objects[i]);
+      sf::RectangleShape rect = objects[i];
+      rect.setPosition(pos);
+      rect.setRotation(angle);
+      ventana.draw(rect);
+
+      fixture = fixture->GetNext();
+    }
   }
 
   for (int i = 0; i < this->targets.size(); i++) {
     ventana.draw(this->targets[i]);
     // TODO
+    // Also consider they can disappear
   }
 }
 
-void Level::run(float deltaTime) {
-  this->physicsEngine.runSimulation(deltaTime);
+void Level::run(float deltaTime) { m_physics.Update(deltaTime); }
+
+int Level::over() {
+  return 1;
+
+  // if (m_targetBody &&
+  //     m_targetBody->GetPosition().y > (SCREEN_HEIGHT - 40.f) / SCALE) {
+  //   return 1;
+  // } else {
+  //   return 0;
+  // }
 }
 
 Level *return_level(int level, int width, int height) {

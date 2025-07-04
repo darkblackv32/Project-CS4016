@@ -9,6 +9,7 @@
 #include "Pause.h"
 #include "Physics.h"
 #include "Slingshot.h"
+#include "helper.h"
 #include "polyphysics.h"
 #include <vector>
 
@@ -82,8 +83,8 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
 
   float deltaTime = 1.0f / 60.0f;
 
-  // Used to save the id of the thrown bird
-  int birdId = 0;
+  // Used to save the the thrown bird
+  b2Body *bird_body = nullptr;
 
   sf::Font font;
   if (!font.loadFromFile("assets/fonts/arial-font/arial.ttf")) {
@@ -121,13 +122,16 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
         }
       }
 
-      if (evento.type == sf::Event::MouseButtonPressed) {
+      if (evento.type == sf::Event::MouseButtonPressed &&
+          evento.mouseButton.button == sf::Mouse::Left) {
         sf::Vector2f mousePos =
             ventana.mapPixelToCoords(sf::Mouse::getPosition(ventana));
         if (pajaro.figura.getGlobalBounds().contains(mousePos) &&
             !pajaro.lanzado) {
           arrastrando = true;
-          clickOffset = pajaro.figura.getPosition() - mousePos;
+          previousMousePos = ventana.mapPixelToCoords(
+              sf::Vector2i(evento.mouseButton.x, evento.mouseButton.y),
+              levelView);
           move = 0;
         } else if (evento.mouseButton.button == sf::Mouse::Left) {
           arrastrando = true;
@@ -141,36 +145,20 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       if (evento.type == sf::Event::MouseButtonReleased && arrastrando) {
         arrastrando = false;
         if (move == 0) {
-          std::cout << "Activate pajaro lanzado" << std::endl;
           pajaro.lanzado = true;
+          bird_body = lev->createBird(pajaro.figura.getPosition(),
+                                      pajaro.figura.getRadius());
+          bird_body->SetAwake(true);
 
-          sf::Vector2f direccion = pos_resortera - pajaro.figura.getPosition();
+          sf::Vector2f dragEndPos = ventana.mapPixelToCoords(
+              {evento.mouseButton.x, evento.mouseButton.y});
+          sf::Vector2f launchVector = previousMousePos - dragEndPos;
 
-          std::cout << "Direction: " << direccion.x << ", " << direccion.y
-                    << std::endl;
-          // create circle object in the physics engine
-          birdId = lev->physicsEngine.addBody(
-              {pajaro.figura.getPosition().x, pajaro.figura.getPosition().y},
-              createCircleCollider(BIRD_RADIUS));
-          lev->physicsEngine.bodies[birdId].elasticity = 0.4f;
+          float launchPower = 0.5f;
+          bird_body->SetLinearVelocity(b2Vec2(launchVector.x * launchPower,
+                                              launchVector.y * launchPower));
 
-          std::cout << "Pos: "
-                    << lev->physicsEngine.bodies[birdId].motionState.pos.x
-                    << ", "
-                    << lev->physicsEngine.bodies[birdId].motionState.pos.y
-                    << std::endl;
-
-          // sets velocity
-          // check if it works
-          lev->physicsEngine.bodies[birdId].motionState.velocity = {
-              direccion.x * FUERZA_MULTIPLICADOR,
-              direccion.y * FUERZA_MULTIPLICADOR};
-          std::cout << "First velocity: "
-                    << lev->physicsEngine.bodies[birdId].motionState.velocity.x
-                    << ", "
-                    << lev->physicsEngine.bodies[birdId].motionState.velocity.y
-                    << std::endl;
-
+          // Create texture
           pajaro.updateTextureState();
 
           // sound
@@ -184,6 +172,10 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     }
 
     if (arrastrando && move == 0) {
+      // This logic of only updating the view of the circle isn't moving the
+      // circle in the physics engine Will still have the impact, but the
+      // starting position is other
+      // TODO
       sf::Vector2f mousePos =
           ventana.mapPixelToCoords(sf::Mouse::getPosition(ventana));
       sf::Vector2f nuevaPos = mousePos + clickOffset;
@@ -260,49 +252,28 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     lev->run(deltaTime);
 
     if (pajaro.lanzado) {
-        pajaro.figura.setPosition(
-                lev->physicsEngine.bodies[birdId].motionState.pos.x,
-                lev->physicsEngine.bodies[birdId].motionState.pos.y);
+      // Run simulation
+      lev->run(deltaTime);
+      // Update in sfml
+      b2Fixture *fixture = bird_body->GetFixtureList();
+      b2Shape::Type shapeType = fixture->GetType();
+      sf::Vector2f pos = metersToPixels(bird_body->GetPosition());
+      float angle = bird_body->GetAngle() * 180.f / b2_pi;
+      pajaro.figura.setPosition(pos);
 
       pajaro.sprite.setPosition(pajaro.figura.getPosition());
 
-      std::cout << "Velocity: "
-                << lev->physicsEngine.bodies[birdId].motionState.velocity.x
-                << ", "
-                << lev->physicsEngine.bodies[birdId].motionState.velocity.y
-                << std::endl;
-      std::cout << "Acceleration: "
-                << lev->physicsEngine.bodies[birdId].motionState.acceleration.x
-                << ", "
-                << lev->physicsEngine.bodies[birdId].motionState.acceleration.y
-                << std::endl;
-      std::cout << "Pos: "
-                << lev->physicsEngine.bodies[birdId].motionState.pos.x << ", "
-                << lev->physicsEngine.bodies[birdId].motionState.pos.y
-                << std::endl;
-
-      // must freeze before
-      // if (lev->physicsEngine.bodies[birdId].motionState.velocity.x <
-      //     THRESHOLD_FREEZE) {
-      //   lev->physicsEngine.bodies[birdId].flags.setFreezeX();
+      // set limits correctly and end cause
+      // TODO
+      // if (lev->physicsEngine.bodies[birdId].flags.isFreezePosition() ||
+      //     pajaro.figura.getPosition().x < -100.0f ||
+      //     pajaro.figura.getPosition().x > lev->x_bound + 100.0f ||
+      //     pajaro.figura.getPosition().y > lev->y_bound + 100.0f) {
+      //   // resets the variable
+      //   pajaro.reset();
+      //   arrastrando = false; // reset arrastrando flag
+      //   // removes the bird from the physics engine and removes the bird id
       // }
-      // if (lev->physicsEngine.bodies[birdId].motionState.velocity.y <
-      //     THRESHOLD_FREEZE) {
-      //   lev->physicsEngine.bodies[birdId].flags.setFreezeY();
-      // }
-
-      // Also considers if the bird goes beyond the limits
-      if (lev->physicsEngine.bodies[birdId].flags.isFreezePosition() ||
-          pajaro.figura.getPosition().x < -100.0f ||
-          pajaro.figura.getPosition().x > lev->x_bound + 100.0f ||
-          pajaro.figura.getPosition().y > lev->y_bound + 100.0f) {
-        // resets the variable
-        pajaro.reset();
-        arrastrando = false; // reset arrastrando flag
-        // removes the bird from the physics engine and removes the bird id
-        lev->physicsEngine.bodies.erase(birdId);
-        birdId = 0;
-      }
     }
 
     ventana.clear();

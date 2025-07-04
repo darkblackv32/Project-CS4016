@@ -1,8 +1,9 @@
 #pragma once
 
-#include "polyphysics.h"
+#include "PhysicsWrapper.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
+#include <SFML/System/Vector2.hpp>
 #include <utility>
 #include <vector>
 
@@ -11,8 +12,9 @@ struct Level {
   std::vector<sf::RectangleShape> targets;
   std::vector<sf::RectangleShape> floor;
 
-  std::vector<int> object_ids;
-  std::vector<int> targets_ids;
+  std::vector<b2Body *> m_bodies;
+  std::vector<b2Body *> m_targets;
+  std::vector<b2Body *> m_static;
 
   float START_LEVEL_X;
   float START_LEVEL_Y;
@@ -20,7 +22,7 @@ struct Level {
   int x_bound;
   int y_bound;
 
-  PhysicsEngine physicsEngine;
+  PhysicsWrapper m_physics;
 
   Level();
   ~Level();
@@ -40,8 +42,12 @@ struct Level {
 
   void setBounds(float x, float y);
 
+  b2Body *createBox(float x, float y, float halfWidth, float halfHeight);
+  b2Body *createBird(const sf::Vector2f &pos, float radius);
+
   void render(sf::RenderWindow &ventana);
   void run(float deltaTime);
+  int over();
 
   void update();
 };
