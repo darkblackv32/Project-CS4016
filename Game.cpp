@@ -78,6 +78,9 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       {static_cast<float>(lev->x_bound), static_cast<float>(lev->y_bound)});
   fondo.setTexture(&backgroundTexture);
 
+  // IMPORTANT
+  // TODO
+  // FIx scaling from the texture. Currently, the texture goes over the circle
   Bird pajaro(birdType, pos_resortera);
   Slingshot resortera(pos_resortera);
 
@@ -250,6 +253,10 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     // Actualizacion de fisica
     float deltaTime = deltaClock.restart().asSeconds();
     lev->run(deltaTime);
+    // TODO
+    // Use energy to detect lives of pigs and objects and deduct accordingly
+    // Recomendation of professor
+    // Also, when things dissapear, implement particle effects
 
     if (pajaro.lanzado) {
       // Run simulation
@@ -263,17 +270,23 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
 
       pajaro.sprite.setPosition(pajaro.figura.getPosition());
 
-      // set limits correctly and end cause
-      // TODO
-      // if (lev->physicsEngine.bodies[birdId].flags.isFreezePosition() ||
-      //     pajaro.figura.getPosition().x < -100.0f ||
-      //     pajaro.figura.getPosition().x > lev->x_bound + 100.0f ||
-      //     pajaro.figura.getPosition().y > lev->y_bound + 100.0f) {
-      //   // resets the variable
-      //   pajaro.reset();
-      //   arrastrando = false; // reset arrastrando flag
-      //   // removes the bird from the physics engine and removes the bird id
-      // }
+      // Resets when the bird is done
+      // Done means out of bounds or too slow. Other way in place of being too
+      // slow could be used, like comparing x number of previous positions and
+      // see the average difference to prevent the reset from being too sudden
+      b2Vec2 velocity = bird_body->GetLinearVelocity();
+      std::cout << "Velocity : " << velocity.x << ", " << velocity.y
+                << std::endl;
+      if (pajaro.figura.getPosition().x < -100.0f ||
+          pajaro.figura.getPosition().x > lev->x_bound + 100.0f ||
+          pajaro.figura.getPosition().y > lev->y_bound + 100.0f ||
+          (abs(velocity.x) < THRESHOLD_VELOCITY &&
+           abs(velocity.y) < THRESHOLD_VELOCITY)) {
+        // removes the bird from the physics engine
+        lev->m_physics.DestroyBody(bird_body);
+        // resets the variable
+        pajaro.reset();
+      }
     }
 
     ventana.clear();
@@ -281,8 +294,6 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     ventana.setView(levelView);
 
     ventana.draw(fondo);
-
-    resortera.draw(ventana);
 
     // renders the objects and update them according to the bodies
     if (lev) {
@@ -292,6 +303,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     if ((arrastrando || !pajaro.lanzado) && move == 0) {
       resortera.updateBands(pajaro.figura.getPosition(), arrastrando);
     }
+    resortera.draw(ventana);
 
     if (arrastrando && !trayectoria.empty() && move == 0) {
       for (size_t i = 0; i < trayectoria.size(); ++i) {

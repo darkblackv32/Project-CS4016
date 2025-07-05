@@ -16,7 +16,8 @@ constexpr float ELASTICIDAD_BLOCK = 0.1f;
 constexpr float STATIC_FRICTION_BLOCK = 0.8f;
 constexpr float LINE_THICKNESS = 1.0f;
 constexpr float BIRD_RADIUS = 30.0f;
-constexpr float THRESHOLD_FREEZE = 2.0f;
+constexpr float OFFSET_ABOVE = 1.0f;
+constexpr float THRESHOLD_VELOCITY = 0.01f;
 const sf::Color LINE_COLOR = {230, 230, 230};
 const sf::Color DEFAULT_COLOR_OBJ = {0, 0, 0};
 // Box2D works with meters, so we need a scale to convert pixels to meters
