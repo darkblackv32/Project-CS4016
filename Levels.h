@@ -9,7 +9,7 @@
 
 struct Level {
   std::vector<sf::RectangleShape> objects;
-  std::vector<sf::RectangleShape> targets;
+  std::vector<sf::CircleShape> targets;
   std::vector<sf::RectangleShape> floor;
 
   std::vector<b2Body *> m_bodies;

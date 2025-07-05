@@ -23,7 +23,8 @@ void Level::setObjects(std::vector<sf::Vector2f> &objectSizes,
   std::vector<sf::RectangleShape> objects;
   for (int i = 0; i < objectSizes.size(); i++) {
     // Physics
-    b2Body *temp_body = createBox(objectPos[i].first, objectPos[i].first,
+    b2Body *temp_body = createBox(objectPos[i].first + objectSizes[i].x / 2,
+                                  objectPos[i].second + objectSizes[i].y / 2,
                                   objectSizes[i].x / 2, objectSizes[i].y / 2);
     // SFML
     b2Fixture *fixture = temp_body->GetFixtureList();
@@ -87,17 +88,38 @@ void Level::setTargets(std::vector<sf::Vector2f> &objectSizes,
                        std::vector<std::pair<float, float>> &objectPos,
                        std::vector<sf::Color> &objectColors) {
 
-  std::vector<sf::RectangleShape> objects;
+  std::vector<sf::CircleShape> objects;
   for (int i = 0; i < objectSizes.size(); i++) {
-    // SFML
-    sf::RectangleShape temp(objectSizes[i]);
-    temp.setPosition(objectPos[i].first, objectPos[i].second);
-    temp.setFillColor(objectColors[i]);
-
-    objects.push_back(temp);
-
     // Physics
-    // TODO
+    b2Body *temp_target = nullptr;
+    b2BodyDef targetDef;
+    targetDef.type = b2_dynamicBody;
+    targetDef.position.Set((objectPos[i].first + objectSizes[i].x) / SCALE,
+                           (objectPos[i].second + objectSizes[i].y) / SCALE);
+    temp_target = m_physics.CreateBody(&targetDef);
+
+    b2CircleShape targetShape;
+    targetShape.m_radius = objectSizes[i].x / SCALE;
+    m_physics.CreateCircleFixture(temp_target, &targetShape, 0.5f);
+
+    temp_target->SetSleepingAllowed(true);
+    temp_target->SetAwake(false);
+
+    m_targets.push_back(temp_target);
+
+    // SFML
+    b2Fixture *fixture = temp_target->GetFixtureList();
+    b2Shape::Type shapeType = fixture->GetType();
+    sf::Vector2f pos = metersToPixels(temp_target->GetPosition());
+    float angle = temp_target->GetAngle() * 180.f / b2_pi;
+
+    sf::CircleShape circle(fixture->GetShape()->m_radius * SCALE);
+    circle.setFillColor(objectColors[i]);
+    circle.setOrigin(circle.getRadius(), circle.getRadius());
+    circle.setPosition(pos);
+    circle.setRotation(angle);
+
+    objects.push_back(circle);
   }
 
   this->targets = objects;
@@ -115,7 +137,7 @@ void Level::setFloor(std::vector<sf::Vector2f> &objectSizes,
     // Consider the conversion from origin point at the top left to the center
     groundBodyDef.position.Set(
         (objectPos[i].first + objectSizes[i].x / 2.0f) / SCALE,
-        (objectPos[i].second + objectSizes[i].y / 2.0f) / SCALE);
+        (objectPos[i].second + objectSizes[i].y) / SCALE);
     temp_static = m_physics.CreateBody(&groundBodyDef);
     b2PolygonShape groundBox;
     groundBox.SetAsBox(objectSizes[i].x / 2.f / SCALE,
@@ -147,8 +169,8 @@ void Level::setBounds(float x, float y) {
 }
 
 void Level::render(sf::RenderWindow &ventana) {
-  // Renders the objects and also updates their positions according to the
-  // physics bodies
+  // Also updates their positions according to the physics bodies
+  // Renders the objects, targets and floor.
   for (int i = 0; i < this->floor.size(); i++) {
     ventana.draw(this->floor[i]);
   }
@@ -175,9 +197,24 @@ void Level::render(sf::RenderWindow &ventana) {
   }
 
   for (int i = 0; i < this->targets.size(); i++) {
-    ventana.draw(this->targets[i]);
-    // TODO
-    // Also consider they can disappear
+    b2Body *body = m_targets[i];
+    b2Fixture *fixture = body->GetFixtureList();
+    while (fixture) {
+      b2Shape::Type shapeType = fixture->GetType();
+      sf::Vector2f pos = metersToPixels(body->GetPosition());
+      float angle = body->GetAngle() * 180.f / b2_pi;
+
+      b2PolygonShape *poly = (b2PolygonShape *)fixture->GetShape();
+      // Asumimos que es una caja creada con SetAsBox
+      b2Vec2 halfSize = poly->m_vertices[2];
+
+      sf::CircleShape circle = targets[i];
+      circle.setPosition(pos);
+      circle.setRotation(angle);
+      ventana.draw(circle);
+
+      fixture = fixture->GetNext();
+    }
   }
 }
 
@@ -206,10 +243,14 @@ Level *return_level(int level, int width, int height) {
 
   switch (level) {
   case 0:
-    bound_x = 1000;
+    bound_x = 1200;
     bound_y = 700;
-    START_LEVEL_X = bound_x / 2.0f;
+    START_LEVEL_X = bound_x - BLOCK * 19;
     START_LEVEL_Y = bound_y - BLOCK * 3;
+
+    l->setStarts(START_LEVEL_X, START_LEVEL_Y);
+
+    l->setBounds(bound_x, bound_y);
 
     objSizes = {
         sf::Vector2f(BLOCK, 2 * BLOCK), sf::Vector2f(6 * BLOCK, BLOCK),
@@ -219,17 +260,30 @@ Level *return_level(int level, int width, int height) {
         sf::Vector2f(BLOCK, 7 * BLOCK), sf::Vector2f(4 * BLOCK, BLOCK),
     };
 
+    // The offset is to be slighly above each other so there aren't weird things
+    // when they collide initially
+    // With smaller values there isn't much difference.
+    // For now it isn't really working because the objects only react when hit
+    // with the ball
+    // Test more later
     objPositions = {
-        std::make_pair(START_LEVEL_X, START_LEVEL_Y - 2 * BLOCK),
-        std::make_pair(START_LEVEL_X, START_LEVEL_Y),
-        std::make_pair(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y),
-        std::make_pair(START_LEVEL_X + 11 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
-        std::make_pair(START_LEVEL_X + 3 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
-        std::make_pair(START_LEVEL_X + 8 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
-        std::make_pair(START_LEVEL_X + 3 * BLOCK, START_LEVEL_Y - 8 * BLOCK),
-        std::make_pair(START_LEVEL_X + 4 * BLOCK, START_LEVEL_Y - 15 * BLOCK),
-        std::make_pair(START_LEVEL_X + 7 * BLOCK, START_LEVEL_Y - 15 * BLOCK),
-        std::make_pair(START_LEVEL_X + 4 * BLOCK, START_LEVEL_Y - 16 * BLOCK),
+        std::make_pair(START_LEVEL_X, START_LEVEL_Y - 2 * BLOCK - OFFSET_ABOVE),
+        std::make_pair(START_LEVEL_X, START_LEVEL_Y - OFFSET_ABOVE),
+        std::make_pair(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y - OFFSET_ABOVE),
+        std::make_pair(START_LEVEL_X + 11 * BLOCK,
+                       START_LEVEL_Y - 2 * BLOCK - OFFSET_ABOVE),
+        std::make_pair(START_LEVEL_X + 3 * BLOCK,
+                       START_LEVEL_Y - 7 * BLOCK - OFFSET_ABOVE),
+        std::make_pair(START_LEVEL_X + 8 * BLOCK,
+                       START_LEVEL_Y - 7 * BLOCK - OFFSET_ABOVE),
+        std::make_pair(START_LEVEL_X + 3 * BLOCK,
+                       START_LEVEL_Y - 8 * BLOCK - OFFSET_ABOVE),
+        std::make_pair(START_LEVEL_X + 4 * BLOCK,
+                       START_LEVEL_Y - 15 * BLOCK - OFFSET_ABOVE),
+        std::make_pair(START_LEVEL_X + 7 * BLOCK,
+                       START_LEVEL_Y - 15 * BLOCK - OFFSET_ABOVE),
+        std::make_pair(START_LEVEL_X + 4 * BLOCK,
+                       START_LEVEL_Y - 16 * BLOCK - OFFSET_ABOVE),
     };
 
     objColors = {
@@ -245,14 +299,13 @@ Level *return_level(int level, int width, int height) {
 
     l->setFloor(objSizes, objPositions, objColors);
 
-    objSizes = {sf::Vector2f(BLOCK, BLOCK)};
+    // We use the same vector for simplicity, It holds the radio
+    objSizes = {sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f)};
     objPositions = {
         std::make_pair(START_LEVEL_X + 5.5 * BLOCK, START_LEVEL_Y - BLOCK)};
     objColors = {{9, 186, 45}};
 
     l->setTargets(objSizes, objPositions, objColors);
-
-    l->setBounds(bound_x, bound_y);
 
     break;
   case 1:
@@ -260,6 +313,10 @@ Level *return_level(int level, int width, int height) {
     bound_y = 800;
     START_LEVEL_X = bound_x - BLOCK * 27;
     START_LEVEL_Y = bound_y - BLOCK * 6;
+
+    l->setStarts(START_LEVEL_X, START_LEVEL_Y);
+
+    l->setBounds(bound_x, bound_y);
 
     objSizes = {
         // pilars
@@ -359,10 +416,13 @@ Level *return_level(int level, int width, int height) {
     l->setFloor(objSizes, objPositions, objColors);
 
     objSizes = {// inside
-                sf::Vector2f(BLOCK, BLOCK),        sf::Vector2f(BLOCK, BLOCK),
-                sf::Vector2f(BLOCK, BLOCK),        sf::Vector2f(BLOCK, BLOCK),
-                sf::Vector2f(BLOCK, BLOCK),        sf::Vector2f(BLOCK, BLOCK),
-                sf::Vector2f(2 * BLOCK, 2 * BLOCK)};
+                sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
+                sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
+                sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
+                sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
+                sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
+                sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
+                sf::Vector2f(2 * BLOCK / 2.0f, 2 * BLOCK / 2.0f)};
     objPositions = {
         // inside
         std::make_pair(START_LEVEL_X + 1.5 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
@@ -378,16 +438,16 @@ Level *return_level(int level, int width, int height) {
 
     l->setTargets(objSizes, objPositions, objColors);
 
-    l->setStarts(START_LEVEL_X, START_LEVEL_Y);
-
-    l->setBounds(bound_x, bound_y);
-
     break;
   case 2:
     bound_x = 1500;
     bound_y = 900;
     START_LEVEL_X = bound_x - BLOCK * 27;
     START_LEVEL_Y = bound_y - BLOCK * 2;
+
+    l->setStarts(START_LEVEL_X, START_LEVEL_Y);
+
+    l->setBounds(bound_x, bound_y);
 
     objSizes = {
         // first building
@@ -493,8 +553,9 @@ Level *return_level(int level, int width, int height) {
     l->setFloor(objSizes, objPositions, objColors);
 
     objSizes = {// inside
-                sf::Vector2f(BLOCK, BLOCK), sf::Vector2f(BLOCK, BLOCK),
-                sf::Vector2f(BLOCK, BLOCK)};
+                sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
+                sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
+                sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f)};
     objPositions = {
         // inside
         std::make_pair(START_LEVEL_X + 1.5 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
@@ -504,10 +565,6 @@ Level *return_level(int level, int width, int height) {
     objColors = {{9, 186, 45}, {9, 186, 45}, {9, 186, 45}};
 
     l->setTargets(objSizes, objPositions, objColors);
-
-    l->setStarts(START_LEVEL_X, START_LEVEL_Y);
-
-    l->setBounds(bound_x, bound_y);
 
     break;
   }
