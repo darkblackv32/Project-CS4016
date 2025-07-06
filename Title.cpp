@@ -28,7 +28,7 @@ int render_title(sf::RenderWindow &ventana) {
   sf::Text gameTitle;
   gameTitle.setFont(font);
   gameTitle.setString("Angry politician");
-  gameTitle.setCharacterSize(72);
+  gameTitle.setCharacterSize(102);
   gameTitle.setFillColor(sf::Color::White);
   gameTitle.setOrigin(gameTitle.getLocalBounds().width / 2,
                       gameTitle.getLocalBounds().height / 2);
