@@ -111,10 +111,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
         ventana.close();
 
       if (evento.type == sf::Event::KeyPressed) {
-        if (evento.key.code == sf::Keyboard::Num1 ||
-            evento.key.code == sf::Keyboard::Numpad1) {
-          pajaro.setBirdType(BirdType::DEFAULT);
-        } else if (evento.key.code == sf::Keyboard::Num2 ||
+        if (evento.key.code == sf::Keyboard::Num2 ||
                    evento.key.code == sf::Keyboard::Numpad2) {
           pajaro.setBirdType(BirdType::MILEI);
         } else if (evento.key.code == sf::Keyboard::Num3 ||

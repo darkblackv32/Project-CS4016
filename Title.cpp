@@ -40,7 +40,7 @@ int render_title(sf::RenderWindow &ventana) {
   startButton.setOrigin(startButton.getLocalBounds().width / 2,
                         startButton.getLocalBounds().height / 2);
   startButton.setPosition(ventana.getSize().x / 2,
-                          ventana.getSize().y / 3 + 100);
+                          ventana.getSize().y / 3 + 150);
 
   sf::Text startButtonText;
   startButtonText.setFont(font);

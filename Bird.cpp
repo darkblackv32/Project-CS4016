@@ -21,8 +21,6 @@ void Bird::loadTextures() {
   idleTexture = nullptr;
   flyingTexture = nullptr;
 
-  BirdTextureCache::ensureDefaultTextures();
-
   switch (type) {
   case BirdType::MILEI:
   case BirdType::FUJIMORI: {
@@ -36,7 +34,6 @@ void Bird::loadTextures() {
       if (!idle->loadFromFile(basePath + "1.png")) {
         std::cerr << "Error loading idle texture for bird type: "
                   << static_cast<int>(type) << "\n";
-        type = BirdType::DEFAULT;
         break;
       }
       entry.first = std::move(idle);
@@ -47,7 +44,6 @@ void Bird::loadTextures() {
       if (!flying->loadFromFile(basePath + "2.png")) {
         std::cerr << "Error loading flying texture for bird type: "
                   << static_cast<int>(type) << "\n";
-        type = BirdType::DEFAULT;
         break;
       }
       entry.second = std::move(flying);
@@ -56,13 +52,7 @@ void Bird::loadTextures() {
     idleTexture = entry.first.get();
     flyingTexture = entry.second.get();
     break;
-  }
-
-  case BirdType::DEFAULT:
-  default:
-    idleTexture = BirdTextureCache::cache[BirdType::DEFAULT].first.get();
-    flyingTexture = idleTexture; // same texture for both states
-    break;
+    }
   }
 
   const sf::Texture *initialTexture =

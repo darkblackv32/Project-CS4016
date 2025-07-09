@@ -13,7 +13,7 @@ int main() {
 
   // Start with title screen
   int gameState = 0; // 0 = title screen, 1 = game
-  BirdType currentBirdType = BirdType::DEFAULT;
+  BirdType currentBirdType = BirdType::MILEI;
 
   // selected level
   int level = 0;
