@@ -37,32 +37,31 @@ Menu::Menu(sf::RenderWindow &window, const std::string &title,
 
   title_text_.setFont(font_);
   title_text_.setString(title_);
-  title_text_.setCharacterSize(72);
+  title_text_.setCharacterSize(48);  // Smaller title
   title_text_.setFillColor(sf::Color::White);
   title_text_.setPosition(
       window_size.x / 2 - title_text_.getLocalBounds().width / 2, 20);
 
-  // Initialize button
+  // Initialize arrow buttons with smaller size
   button_texture_left_.loadFromFile("assets/textures/arrow.png");
   button_texture_right_.loadFromFile("assets/textures/arrow.png");
 
   button_left_.setTexture(button_texture_left_);
   button_right_.setTexture(button_texture_right_);
 
-  button_left_.setPosition(SPACE_BETWEEN_ENDS_BUTTONS, window_size.y - 50);
-  button_right_.setPosition(window_size.x - SPACE_BETWEEN_ENDS_BUTTONS,
-                            window_size.y - 50);
+  // Smaller button scaling
+  float button_scale = 0.05f;  // Much smaller
+  button_left_.setScale(button_scale, button_scale);
+  button_right_.setScale(button_scale, button_scale);
 
-  // Scale the buttons
-  sf::Vector2u textureSizeLeft = button_texture_left_.getSize();
-  button_left_.setScale(BUTTON_SCALE_X / textureSizeLeft.x,
-                        BUTTON_SCALE_Y / textureSizeLeft.y);
+  // Position left arrow (pointing left)
+  button_left_.setPosition(100, window_size.y / 2);
 
+  // Position and rotate right arrow (pointing right)
   sf::Vector2u textureSizeRight = button_texture_right_.getSize();
-  button_right_.setScale(BUTTON_SCALE_X / textureSizeRight.x,
-                         BUTTON_SCALE_Y / textureSizeRight.y);
-
+  button_right_.setOrigin(textureSizeRight.x / 2.0f, textureSizeRight.y / 2.0f);
   button_right_.setRotation(180);
+  button_right_.setPosition(window_size.x - 100, window_size.y / 2);
 
   updateOptionPositions();
 }
@@ -114,45 +113,71 @@ void Menu::draw() {
 }
 
 void Menu::nextPage() {
-  if ((current_page_ + 1) * OPTIONS_PER_PAGE < previews_.size()) {
-    current_page_++;
+  std::cout << "Next page - Current: " << current_page_ << " Total levels: " << previews_.size() << std::endl;
+  // Simple approach: just cycle through levels one by one
+  if (!previews_.empty()) {
+    current_page_ = (current_page_ + 1) % ((previews_.size() + OPTIONS_PER_PAGE - 1) / OPTIONS_PER_PAGE);
     updateOptionPositions();
+    std::cout << "Moved to page: " << current_page_ << std::endl;
   }
 }
 
 void Menu::previousPage() {
-  if (current_page_ > 0) {
-    current_page_--;
+  std::cout << "Previous page - Current: " << current_page_ << std::endl;
+  if (!previews_.empty()) {
+    int total_pages = (previews_.size() + OPTIONS_PER_PAGE - 1) / OPTIONS_PER_PAGE;
+    current_page_ = (current_page_ - 1 + total_pages) % total_pages;
     updateOptionPositions();
+    std::cout << "Moved to page: " << current_page_ << std::endl;
   }
 }
 
 void Menu::updateOptionPositions() {
+  // Center a single level preview with proper sizing
+  auto window_size = window_.getSize();
   int start_index = current_page_ * OPTIONS_PER_PAGE;
-  int end_index =
-      std::min(start_index + OPTIONS_PER_PAGE, (int)previews_.size());
+  int end_index = std::min(start_index + OPTIONS_PER_PAGE, (int)previews_.size());
 
+  // Hide all previews first
+  for (size_t i = 0; i < previews_.size(); ++i) {
+    previews_[i].sprite.setPosition(-2000, -2000);
+    previews_[i].text.setPosition(-2000, -2000);
+  }
+
+  // Position the single visible preview in the center
   for (int i = start_index; i < end_index; ++i) {
-    int option_index_on_page = i - start_index;
-    previews_[i].sprite.setPosition(
-        (option_index_on_page + 1) * SPRITE_WIDTH_WITH_PADDING,
-        window_.getSize().y / 2);
-    previews_[i].text.setPosition(
-        (option_index_on_page + 1) * SPRITE_WIDTH_WITH_PADDING,
-        window_.getSize().y / 2 + 100);
+    // Center horizontally and vertically
+    float x_pos = window_size.x / 2;
+    float y_pos = window_size.y / 2 - 20;
+
+    // Reasonable scale for the preview image (not too big)
+    float scale = 0.8f;  // Moderate scaling
+    previews_[i].sprite.setScale(scale, scale);
+
+    // Center the sprite by adjusting for its size
+    sf::FloatRect bounds = previews_[i].sprite.getLocalBounds();
+    previews_[i].sprite.setPosition(x_pos - (bounds.width * scale) / 2,
+                                   y_pos - (bounds.height * scale) / 2);
+
+    // Position text below the sprite, centered
+    sf::FloatRect textBounds = previews_[i].text.getLocalBounds();
+    previews_[i].text.setPosition(x_pos - textBounds.width / 2,
+                                 y_pos + (bounds.height * scale) / 2 + 20);
+
+    std::cout << "Centered level " << i << " at (" << x_pos << ", " << y_pos << ")" << std::endl;
   }
 }
 
 int Menu::get_level() { return level; }
 
 int render_menu(sf::RenderWindow &window) {
-  // Make this dynamic if possible
+  // Only 3 levels available
   std::vector<LevelPreview> previews;
   for (int i = 0; i < 3; ++i) {
     previews.push_back(get_level_preview(i));
   }
 
-  Menu menu(window, "Main Menu", previews);
+  Menu menu(window, "Level Select", previews);
   while (window.isOpen()) {
     sf::Event event;
     while (window.pollEvent(event)) {
