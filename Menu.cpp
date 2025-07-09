@@ -1,5 +1,6 @@
 #include "Menu.h"
 #include "Constants.h"
+#include "Levels.h"
 
 #include <SFML/Graphics.hpp>
 #include <iostream>
@@ -17,8 +18,8 @@ int extract_number(const std::string &s) {
 }
 
 Menu::Menu(sf::RenderWindow &window, const std::string &title,
-           const std::vector<std::string> &options)
-    : window_(window), title_(title), options_(options), current_page_(0) {
+           std::vector<LevelPreview> &previews)
+    : window_(window), title_(title), previews_(previews), current_page_(0) {
   if (!background_texture_.loadFromFile("assets/textures/portada_clean.jpg")) {
     std::cout << "Failed to load background image." << std::endl;
   }
@@ -40,16 +41,6 @@ Menu::Menu(sf::RenderWindow &window, const std::string &title,
   title_text_.setFillColor(sf::Color::White);
   title_text_.setPosition(
       window_size.x / 2 - title_text_.getLocalBounds().width / 2, 20);
-
-  // Initialize option texts
-  for (const auto &option : options_) {
-    sf::Text text;
-    text.setFont(font_);
-    text.setString(option);
-    text.setCharacterSize(30);
-    text.setFillColor(sf::Color::White);
-    option_texts_.push_back(text);
-  }
 
   // Initialize button
   button_texture_left_.loadFromFile("assets/textures/arrow.png");
@@ -90,11 +81,11 @@ void Menu::handleInput(const sf::Event &event) {
         // Check for option selection
         int start_index = current_page_ * OPTIONS_PER_PAGE;
         int end_index =
-            std::min(start_index + OPTIONS_PER_PAGE, (int)options_.size());
+            std::min(start_index + OPTIONS_PER_PAGE, (int)previews_.size());
 
         for (int i = start_index; i < end_index; ++i) {
-          if (option_texts_[i].getGlobalBounds().contains(mouse_pos)) {
-            level = extract_number(options_[i]);
+          if (previews_[i].sprite.getGlobalBounds().contains(mouse_pos)) {
+            level = i;
             break;
           }
         }
@@ -110,11 +101,12 @@ void Menu::draw() {
   // Calculate the range of options to display on the current page
   int start_index = current_page_ * OPTIONS_PER_PAGE;
   int end_index =
-      std::min(start_index + OPTIONS_PER_PAGE, (int)options_.size());
+      std::min(start_index + OPTIONS_PER_PAGE, (int)previews_.size());
 
   // Draw the options for the current page
   for (int i = start_index; i < end_index; ++i) {
-    window_.draw(option_texts_[i]);
+    window_.draw(previews_[i].sprite);
+    window_.draw(previews_[i].text);
   }
 
   window_.draw(button_left_);
@@ -122,7 +114,7 @@ void Menu::draw() {
 }
 
 void Menu::nextPage() {
-  if ((current_page_ + 1) * OPTIONS_PER_PAGE < options_.size()) {
+  if ((current_page_ + 1) * OPTIONS_PER_PAGE < previews_.size()) {
     current_page_++;
     updateOptionPositions();
   }
@@ -136,47 +128,31 @@ void Menu::previousPage() {
 }
 
 void Menu::updateOptionPositions() {
-  auto window_size = window_.getSize();
-
-  float start_x = SPACE_BETWEEN_ENDS_BUTTONS + 10;
-  float start_y = this->title_text_.getLocalBounds().getPosition().y +
-                  this->title_text_.getLocalBounds().getSize().y + 100;
-  option_texts_[0].getLocalBounds().width;
-  float x_offset = (window_size.x +
-                    option_texts_[0].getLocalBounds().width * OPTIONS_PER_ROW) /
-                   OPTIONS_PER_ROW;
-  float y_offset = (window_size.y +
-                    option_texts_[0].getLocalBounds().height *
-                        (OPTIONS_PER_PAGE / OPTIONS_PER_ROW) -
-                    start_y) /
-                   (OPTIONS_PER_PAGE / OPTIONS_PER_ROW);
-
-  // Calculate the range of options to display on the current page
   int start_index = current_page_ * OPTIONS_PER_PAGE;
   int end_index =
-      std::min(start_index + OPTIONS_PER_PAGE, (int)options_.size());
+      std::min(start_index + OPTIONS_PER_PAGE, (int)previews_.size());
 
-  // Update the position of each option text on the current page
   for (int i = start_index; i < end_index; ++i) {
-    int index_on_page = i - start_index;
-    int row = index_on_page / OPTIONS_PER_ROW;
-    int col = index_on_page % OPTIONS_PER_ROW;
-
-    option_texts_[i].setPosition(start_x + col * x_offset,
-                                 start_y + row * y_offset);
+    int option_index_on_page = i - start_index;
+    previews_[i].sprite.setPosition(
+        (option_index_on_page + 1) * SPRITE_WIDTH_WITH_PADDING,
+        window_.getSize().y / 2);
+    previews_[i].text.setPosition(
+        (option_index_on_page + 1) * SPRITE_WIDTH_WITH_PADDING,
+        window_.getSize().y / 2 + 100);
   }
 }
 
-int Menu::get_level() { return this->level; }
+int Menu::get_level() { return level; }
 
 int render_menu(sf::RenderWindow &window) {
   // Make this dynamic if possible
-  std::vector<std::string> levels = {
-      "Level 0",
-      "Level 1",
-      "Level 2",
-  };
-  Menu menu(window, "Main Menu", levels);
+  std::vector<LevelPreview> previews;
+  for (int i = 0; i < 3; ++i) {
+    previews.push_back(get_level_preview(i));
+  }
+
+  Menu menu(window, "Main Menu", previews);
   while (window.isOpen()) {
     sf::Event event;
     while (window.pollEvent(event)) {
@@ -199,34 +175,4 @@ int render_menu(sf::RenderWindow &window) {
 
   // Shouldn't happen
   return -1;
-}
-
-int test_menu() {
-  sf::RenderWindow window(sf::VideoMode(800, 600), "SFML Menu");
-  window.setFramerateLimit(60);
-
-  std::vector<std::string> options = {
-      "Level 0",
-      "Level 1",
-      "Level 2",
-  };
-
-  Menu menu(window, "Main Menu", options);
-
-  while (window.isOpen()) {
-    sf::Event event;
-    while (window.pollEvent(event)) {
-      if (event.type == sf::Event::Closed) {
-        window.close();
-      }
-      menu.handleInput(event);
-    }
-
-    // dark blue background
-    window.clear(sf::Color(50, 50, 150));
-    menu.draw();
-    window.display();
-  }
-
-  return 0;
 }

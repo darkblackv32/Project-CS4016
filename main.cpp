@@ -5,8 +5,8 @@
 #include <cmath>
 
 int main() {
-  int width = 800;
-  int height = 600;
+  int width = sf::VideoMode::getDesktopMode().width;
+  int height = sf::VideoMode::getDesktopMode().height;
   sf::RenderWindow ventana(sf::VideoMode(width, height),
                            "Angry Birds Ultimate");
   ventana.setFramerateLimit(60);

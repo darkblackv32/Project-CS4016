@@ -6,6 +6,7 @@
 #include <SFML/System/Vector2.hpp>
 #include <utility>
 #include <vector>
+#include <memory>
 
 struct Level {
   std::vector<sf::RectangleShape> objects;
@@ -52,6 +53,15 @@ struct Level {
   void update();
 };
 
+struct LevelPreview {
+  std::string title;
+  std::shared_ptr<sf::Texture> texture;
+  sf::Sprite sprite;
+  sf::Text text;
+  std::shared_ptr<sf::Font> font;
+};
+
 Level *return_level(int level, int width, int height);
+LevelPreview get_level_preview(int level);
 
 void test_level(int level);
