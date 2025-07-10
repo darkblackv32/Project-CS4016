@@ -233,6 +233,24 @@ int Level::over() {
   // }
 }
 
+void Level::add_efect_bird(b2Body *bird_body) {
+  switch (this->n_level) {
+  case 0:
+    break;
+  case 1:
+    break;
+  case 2:
+    b2Vec2 impulse(EXTRA_IMPULSE_RIGHT, 0);
+    bird_body->ApplyLinearImpulseToCenter(impulse, true);
+    break;
+    break;
+  case 3:
+    b2Vec2 impulse(0.0f, EXTRA_IMPULSE_DOWN);
+    bird_body->ApplyLinearImpulseToCenter(impulse, true);
+    break;
+  }
+}
+
 Level *return_level(int level, int width, int height) {
   std::vector<sf::Vector2f> objSizes;
   std::vector<std::pair<float, float>> objPositions;

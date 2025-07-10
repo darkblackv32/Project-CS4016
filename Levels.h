@@ -53,6 +53,8 @@ struct Level {
   void run(float deltaTime);
   int over();
 
+  void add_efect_bird(b2Body *bird_body);
+
   void update();
 };
 

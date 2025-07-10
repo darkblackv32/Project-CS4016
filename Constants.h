@@ -24,4 +24,5 @@ const sf::Color DEFAULT_COLOR_OBJ = {0, 0, 0};
 // Box2D works with meters, so we need a scale to convert pixels to meters
 const float SCALE = 30.f;
 const int SPRITE_WIDTH_WITH_PADDING = 250;
-const float EXTRA_IMPULSE_DOWN = 500.0f;
+const float EXTRA_IMPULSE_DOWN = 400.0f;
+const float EXTRA_IMPULSE_RIGHT = 200.0f;

@@ -17,6 +17,43 @@
 
 const float TRAJECTORY_STEP = 0.0001f;
 
+void move_view(sf::Vector2f &delta, sf::View &levelView,
+               sf::FloatRect &levelBounds) {
+  levelView.move(delta);
+
+  // --- Apply View Limits ---
+  sf::Vector2f viewCenter = levelView.getCenter();
+  sf::Vector2f viewSize = levelView.getSize();
+
+  float halfViewWidth = viewSize.x / 2.0f;
+  float halfViewHeight = viewSize.y / 2.0f;
+
+  // Clamp the view's center within the level bounds
+  // Ensure the left edge of the view is not less than the left edge of
+  // the level
+  if (viewCenter.x - halfViewWidth < levelBounds.left) {
+    viewCenter.x = levelBounds.left + halfViewWidth;
+  }
+  // Ensure the right edge of the view is not greater than the right
+  // edge of the level
+  if (viewCenter.x + halfViewWidth > levelBounds.left + levelBounds.width) {
+    viewCenter.x = levelBounds.left + levelBounds.width - halfViewWidth;
+  }
+  // Ensure the top edge of the view is not less than the top edge of
+  // the level
+  if (viewCenter.y - halfViewHeight < levelBounds.top) {
+    viewCenter.y = levelBounds.top + halfViewHeight;
+  }
+  // Ensure the bottom edge of the view is not greater than the bottom
+  // edge of the level
+  if (viewCenter.y + halfViewHeight > levelBounds.top + levelBounds.height) {
+    viewCenter.y = levelBounds.top + levelBounds.height - halfViewHeight;
+  }
+
+  // Set the clamped center back to the view
+  levelView.setCenter(viewCenter);
+}
+
 void playBirdSound(BirdType birdType) {
   static sf::SoundBuffer mileiBuffer;
   static sf::SoundBuffer fujimoriBuffer;
@@ -135,8 +172,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
           // Can also be done with apply force, but then it needs to be applied
           // continusly
           // Change it to obtain in level
-          b2Vec2 impulse(0.0f, EXTRA_IMPULSE_DOWN);
-          bird_body->ApplyLinearImpulseToCenter(impulse, true);
+          lev->add_efect_bird(bird_body);
           used = 1;
         } else if (pajaro.figura.getGlobalBounds().contains(mousePos) &&
                    !pajaro.lanzado) {
@@ -219,40 +255,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
 
       sf::Vector2f delta = previousMousePos - mousePos;
 
-      levelView.move(delta);
-
-      // --- Apply View Limits ---
-      sf::Vector2f viewCenter = levelView.getCenter();
-      sf::Vector2f viewSize = levelView.getSize();
-
-      float halfViewWidth = viewSize.x / 2.0f;
-      float halfViewHeight = viewSize.y / 2.0f;
-
-      // Clamp the view's center within the level bounds
-      // Ensure the left edge of the view is not less than the left edge of
-      // the level
-      if (viewCenter.x - halfViewWidth < levelBounds.left) {
-        viewCenter.x = levelBounds.left + halfViewWidth;
-      }
-      // Ensure the right edge of the view is not greater than the right
-      // edge of the level
-      if (viewCenter.x + halfViewWidth > levelBounds.left + levelBounds.width) {
-        viewCenter.x = levelBounds.left + levelBounds.width - halfViewWidth;
-      }
-      // Ensure the top edge of the view is not less than the top edge of
-      // the level
-      if (viewCenter.y - halfViewHeight < levelBounds.top) {
-        viewCenter.y = levelBounds.top + halfViewHeight;
-      }
-      // Ensure the bottom edge of the view is not greater than the bottom
-      // edge of the level
-      if (viewCenter.y + halfViewHeight >
-          levelBounds.top + levelBounds.height) {
-        viewCenter.y = levelBounds.top + levelBounds.height - halfViewHeight;
-      }
-
-      // Set the clamped center back to the view
-      levelView.setCenter(viewCenter);
+      move_view(delta, levelView, levelBounds);
 
       // Update lastMousePos for the next frame (important for smooth
       // dragging) We re-map it because the view might have been clamped
@@ -281,16 +284,15 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       pajaro.sprite.setPosition(pajaro.figura.getPosition());
 
       // updates the view to follow the bird
-      levelView.setCenter(pajaro.figura.getPosition().x,
-                          pajaro.figura.getPosition().y);
+      sf::Vector2f delta(pajaro.figura.getPosition().x,
+                         pajaro.figura.getPosition().y);
+      move_view(delta, levelView, levelBounds);
 
       // Resets when the bird is done
       // Done means out of bounds or too slow. Other way in place of being too
       // slow could be used, like comparing x number of previous positions and
       // see the average difference to prevent the reset from being too sudden
       b2Vec2 velocity = bird_body->GetLinearVelocity();
-      std::cout << "Velocity : " << velocity.x << ", " << velocity.y
-                << std::endl;
       if (pajaro.figura.getPosition().x < -100.0f ||
           pajaro.figura.getPosition().x > lev->x_bound + 100.0f ||
           pajaro.figura.getPosition().y > lev->y_bound + 100.0f ||
