@@ -62,8 +62,9 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   sf::FloatRect levelBounds(0, 0, lev->x_bound, lev->y_bound);
   sf::Vector2f previousMousePos;
   sf::Vector2f pos_resortera(100.0f, lev->y_bound - 130.0f);
-  // move represents 0 for the bird and 1 for the camera
   levelView.setCenter(lev->x_bound / 2, lev->y_bound / 2);
+  // move represents 0 for the bird and 1 for the camera
+  ventana.setView(levelView);
   int move = 0;
 
   // For the pause menu
@@ -89,6 +90,9 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   // Used to save the the thrown bird
   b2Body *bird_body = nullptr;
 
+  // bird's abilty
+  bool used = 0;
+
   sf::Font font;
   if (!font.loadFromFile("assets/fonts/arial-font/arial.ttf")) {
     if (!font.loadFromFile("assets/fonts/angrybirds-regular.ttf")) {
@@ -112,7 +116,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
 
       if (evento.type == sf::Event::KeyPressed) {
         if (evento.key.code == sf::Keyboard::Num2 ||
-                   evento.key.code == sf::Keyboard::Numpad2) {
+            evento.key.code == sf::Keyboard::Numpad2) {
           pajaro.setBirdType(BirdType::MILEI);
         } else if (evento.key.code == sf::Keyboard::Num3 ||
                    evento.key.code == sf::Keyboard::Numpad3) {
@@ -126,13 +130,22 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
           evento.mouseButton.button == sf::Mouse::Left) {
         sf::Vector2f mousePos =
             ventana.mapPixelToCoords(sf::Mouse::getPosition(ventana));
-        if (pajaro.figura.getGlobalBounds().contains(mousePos) &&
-            !pajaro.lanzado) {
+        if (pajaro.lanzado && used == 0) {
+          // Apply linear impulse
+          // Can also be done with apply force, but then it needs to be applied
+          // continusly
+          // Change it to obtain in level
+          b2Vec2 impulse(0.0f, EXTRA_IMPULSE_DOWN);
+          bird_body->ApplyLinearImpulseToCenter(impulse, true);
+          used = 1;
+        } else if (pajaro.figura.getGlobalBounds().contains(mousePos) &&
+                   !pajaro.lanzado) {
           arrastrando = true;
           previousMousePos = ventana.mapPixelToCoords(
               sf::Vector2i(evento.mouseButton.x, evento.mouseButton.y),
               levelView);
           move = 0;
+          used = 0;
         } else if (evento.mouseButton.button == sf::Mouse::Left) {
           arrastrando = true;
           previousMousePos = ventana.mapPixelToCoords(
@@ -266,6 +279,10 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       pajaro.figura.setPosition(pos);
 
       pajaro.sprite.setPosition(pajaro.figura.getPosition());
+
+      // updates the view to follow the bird
+      levelView.setCenter(pajaro.figura.getPosition().x,
+                          pajaro.figura.getPosition().y);
 
       // Resets when the bird is done
       // Done means out of bounds or too slow. Other way in place of being too

@@ -3,8 +3,9 @@
 #define PHYSICSWRAPPER_H
 
 #include <box2d/box2d.h>
-#include <memory>
+#include <cstdint>
 #include <functional>
+#include <memory>
 #include <unordered_map>
 #include <vector>
 

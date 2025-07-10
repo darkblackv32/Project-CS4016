@@ -7,7 +7,8 @@ constexpr float RADIO_MAX_RESORTERA = 180.0f;
 constexpr float COEF_RESTITUCION = 0.6f;
 constexpr float FRICCION_SUELO = 0.7f;
 constexpr float BLOCK = 30;
-constexpr int OPTIONS_PER_PAGE = 1;  // Show one level at a time for arrow navigation
+constexpr int OPTIONS_PER_PAGE =
+    1; // Show one level at a time for arrow navigation
 constexpr int OPTIONS_PER_ROW = 3;
 constexpr float BUTTON_SCALE_X = 30.0f;
 constexpr float BUTTON_SCALE_Y = 50.0f;
@@ -23,3 +24,4 @@ const sf::Color DEFAULT_COLOR_OBJ = {0, 0, 0};
 // Box2D works with meters, so we need a scale to convert pixels to meters
 const float SCALE = 30.f;
 const int SPRITE_WIDTH_WITH_PADDING = 250;
+const float EXTRA_IMPULSE_DOWN = 500.0f;

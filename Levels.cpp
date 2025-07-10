@@ -163,6 +163,8 @@ void Level::setStarts(float x, float y) {
   this->START_LEVEL_Y = y;
 }
 
+void Level::setNLevel(int n) { this->n_level = n; }
+
 void Level::setBounds(float x, float y) {
   this->x_bound = x;
   this->y_bound = y;
@@ -236,6 +238,7 @@ Level *return_level(int level, int width, int height) {
   std::vector<std::pair<float, float>> objPositions;
   std::vector<sf::Color> objColors;
   Level *l = new Level();
+  l->setNLevel(level);
   float START_LEVEL_X;
   float START_LEVEL_Y;
   int bound_x;
@@ -563,6 +566,139 @@ Level *return_level(int level, int width, int height) {
         std::make_pair(START_LEVEL_X + 13.5 * BLOCK, START_LEVEL_Y - 6 * BLOCK),
     };
     objColors = {{9, 186, 45}, {9, 186, 45}, {9, 186, 45}};
+
+    l->setTargets(objSizes, objPositions, objColors);
+
+    break;
+  case 3:
+    bound_x = 2000;
+    bound_y = 1000;
+    START_LEVEL_X = bound_x - BLOCK * 26;
+    START_LEVEL_Y = bound_y - BLOCK * 2;
+
+    l->setStarts(START_LEVEL_X, START_LEVEL_Y);
+
+    l->setBounds(bound_x, bound_y);
+
+    objSizes = {
+        // bottom
+        // base
+        sf::Vector2f(3 * BLOCK, BLOCK),
+        sf::Vector2f(2.5 * BLOCK, BLOCK),
+        sf::Vector2f(4 * BLOCK, BLOCK),
+        sf::Vector2f(2.5 * BLOCK, BLOCK),
+        sf::Vector2f(3 * BLOCK, BLOCK),
+        // pilars
+        sf::Vector2f(BLOCK, BLOCK * 6),
+        sf::Vector2f(BLOCK, BLOCK * 6),
+        sf::Vector2f(BLOCK, BLOCK * 6),
+        sf::Vector2f(BLOCK, BLOCK * 6),
+
+        // middle
+        // lower
+        sf::Vector2f(7 * BLOCK, BLOCK),
+        sf::Vector2f(5 * BLOCK, BLOCK),
+        sf::Vector2f(7 * BLOCK, BLOCK),
+        // upper
+        sf::Vector2f(9.5 * BLOCK, BLOCK),
+        sf::Vector2f(9.5 * BLOCK, BLOCK),
+
+        // top
+        // pilars
+        sf::Vector2f(BLOCK, 2 * BLOCK),
+        sf::Vector2f(BLOCK, 2 * BLOCK),
+        sf::Vector2f(BLOCK, 2 * BLOCK),
+        sf::Vector2f(BLOCK, 2 * BLOCK),
+        sf::Vector2f(BLOCK, 2 * BLOCK),
+        sf::Vector2f(BLOCK, 2 * BLOCK),
+        sf::Vector2f(BLOCK, 2 * BLOCK),
+        sf::Vector2f(BLOCK, 2 * BLOCK),
+        sf::Vector2f(BLOCK, 2 * BLOCK),
+        // sideways
+        sf::Vector2f(6 * BLOCK, BLOCK),
+        sf::Vector2f(7 * BLOCK, BLOCK),
+        sf::Vector2f(6 * BLOCK, BLOCK),
+    };
+
+    objPositions = {
+        // bottom
+        // base
+        std::make_pair(START_LEVEL_X + BLOCK, START_LEVEL_Y - BLOCK),
+        std::make_pair(START_LEVEL_X + 5 * BLOCK, START_LEVEL_Y - BLOCK),
+        std::make_pair(START_LEVEL_X + 8.5 * BLOCK, START_LEVEL_Y - BLOCK),
+        std::make_pair(START_LEVEL_X + 13.5 * BLOCK, START_LEVEL_Y - BLOCK),
+        std::make_pair(START_LEVEL_X + 17 * BLOCK, START_LEVEL_Y - BLOCK),
+        // pillars
+        std::make_pair(START_LEVEL_X + 4 * BLOCK, START_LEVEL_Y - 6 * BLOCK),
+        std::make_pair(START_LEVEL_X + 7.5 * BLOCK, START_LEVEL_Y - 6 * BLOCK),
+        std::make_pair(START_LEVEL_X + 12.5 * BLOCK, START_LEVEL_Y - 6 * BLOCK),
+        std::make_pair(START_LEVEL_X + 16 * BLOCK, START_LEVEL_Y - 6 * BLOCK),
+
+        // middle
+        // lower
+        std::make_pair(START_LEVEL_X + 1 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
+        std::make_pair(START_LEVEL_X + 8 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
+        std::make_pair(START_LEVEL_X + 13 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
+        // upper
+        std::make_pair(START_LEVEL_X + 1 * BLOCK, START_LEVEL_Y - 8 * BLOCK),
+        std::make_pair(START_LEVEL_X + 10.5 * BLOCK, START_LEVEL_Y - 8 * BLOCK),
+
+        // top
+        // pillars
+        std::make_pair(START_LEVEL_X + 2 * BLOCK, START_LEVEL_Y - 10 * BLOCK),
+        std::make_pair(START_LEVEL_X + 4 * BLOCK, START_LEVEL_Y - 10 * BLOCK),
+        std::make_pair(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y - 10 * BLOCK),
+        std::make_pair(START_LEVEL_X + 8 * BLOCK, START_LEVEL_Y - 10 * BLOCK),
+        std::make_pair(START_LEVEL_X + 10 * BLOCK, START_LEVEL_Y - 10 * BLOCK),
+        std::make_pair(START_LEVEL_X + 12 * BLOCK, START_LEVEL_Y - 10 * BLOCK),
+        std::make_pair(START_LEVEL_X + 14 * BLOCK, START_LEVEL_Y - 10 * BLOCK),
+        std::make_pair(START_LEVEL_X + 16 * BLOCK, START_LEVEL_Y - 10 * BLOCK),
+        std::make_pair(START_LEVEL_X + 18 * BLOCK, START_LEVEL_Y - 10 * BLOCK),
+        // sideways
+        std::make_pair(START_LEVEL_X + 1 * BLOCK, START_LEVEL_Y - 11 * BLOCK),
+        std::make_pair(START_LEVEL_X + 7 * BLOCK, START_LEVEL_Y - 11 * BLOCK),
+        std::make_pair(START_LEVEL_X + 14 * BLOCK, START_LEVEL_Y - 11 * BLOCK),
+    };
+
+    objColors = {
+        {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
+        {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
+        {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
+        {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
+        {0, 0, 0}, {0, 0, 0},
+    };
+
+    l->setObjects(objSizes, objPositions, objColors);
+
+    objSizes = {
+        sf::Vector2f(bound_x, BLOCK * 2),
+        // sides
+        sf::Vector2f(BLOCK, BLOCK * 12),
+        sf::Vector2f(BLOCK, BLOCK * 12),
+        // square
+        sf::Vector2f(BLOCK, BLOCK),
+        sf::Vector2f(BLOCK, BLOCK),
+    };
+    objPositions = {
+        std::make_pair(0.0f, bound_y - 2 * BLOCK),
+        // sides
+        std::make_pair(START_LEVEL_X, START_LEVEL_Y - 12 * BLOCK),
+        std::make_pair(START_LEVEL_X + 20 * BLOCK, START_LEVEL_Y - 12 * BLOCK),
+        // squares
+        std::make_pair(START_LEVEL_X + 1 * BLOCK, START_LEVEL_Y - 6 * BLOCK),
+        std::make_pair(START_LEVEL_X + 19 * BLOCK, START_LEVEL_Y - 6 * BLOCK),
+    };
+    objColors = {{120, 110, 100},
+                 {120, 110, 100},
+                 {120, 110, 100},
+                 {120, 110, 100},
+                 {120, 110, 100}};
+
+    l->setFloor(objSizes, objPositions, objColors);
+
+    objSizes = {};
+    objPositions = {};
+    objColors = {};
 
     l->setTargets(objSizes, objPositions, objColors);
 

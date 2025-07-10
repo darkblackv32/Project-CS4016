@@ -4,9 +4,9 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/System/Vector2.hpp>
+#include <memory>
 #include <utility>
 #include <vector>
-#include <memory>
 
 struct Level {
   std::vector<sf::RectangleShape> objects;
@@ -22,6 +22,8 @@ struct Level {
 
   int x_bound;
   int y_bound;
+
+  int n_level;
 
   PhysicsWrapper m_physics;
 
@@ -40,6 +42,7 @@ struct Level {
                 std::vector<sf::Color> &objectColors);
 
   void setStarts(float x, float y);
+  void setNLevel(int n);
 
   void setBounds(float x, float y);
 
