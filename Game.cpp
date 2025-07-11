@@ -17,9 +17,7 @@
 
 const float TRAJECTORY_STEP = 0.0001f;
 
-void move_view(sf::Vector2f &delta, sf::View &levelView,
-               sf::FloatRect &levelBounds) {
-  levelView.move(delta);
+void move_view(sf::View &levelView, sf::FloatRect &levelBounds) {
 
   // --- Apply View Limits ---
   sf::Vector2f viewCenter = levelView.getCenter();
@@ -255,7 +253,8 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
 
       sf::Vector2f delta = previousMousePos - mousePos;
 
-      move_view(delta, levelView, levelBounds);
+      levelView.move(delta);
+      move_view(levelView, levelBounds);
 
       // Update lastMousePos for the next frame (important for smooth
       // dragging) We re-map it because the view might have been clamped
@@ -284,9 +283,9 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       pajaro.sprite.setPosition(pajaro.figura.getPosition());
 
       // updates the view to follow the bird
-      sf::Vector2f delta(pajaro.figura.getPosition().x,
-                         pajaro.figura.getPosition().y);
-      move_view(delta, levelView, levelBounds);
+      levelView.setCenter(pajaro.figura.getPosition().x,
+                          pajaro.figura.getPosition().y);
+      move_view(levelView, levelBounds);
 
       // Resets when the bird is done
       // Done means out of bounds or too slow. Other way in place of being too
