@@ -60,10 +60,11 @@ struct Level {
 
 struct LevelPreview {
   std::string title;
+  sf::Text text;
+  sf::Text description;
+  std::shared_ptr<sf::Font> font;
   std::shared_ptr<sf::Texture> texture;
   sf::Sprite sprite;
-  sf::Text text;
-  std::shared_ptr<sf::Font> font;
 };
 
 Level *return_level(int level, int width, int height);

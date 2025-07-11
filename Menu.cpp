@@ -106,6 +106,7 @@ void Menu::draw() {
   for (int i = start_index; i < end_index; ++i) {
     window_.draw(previews_[i].sprite);
     window_.draw(previews_[i].text);
+    window_.draw(previews_[i].description);
   }
 
   window_.draw(button_left_);
@@ -142,6 +143,7 @@ void Menu::updateOptionPositions() {
   for (size_t i = 0; i < previews_.size(); ++i) {
     previews_[i].sprite.setPosition(-2000, -2000);
     previews_[i].text.setPosition(-2000, -2000);
+    previews_[i].description.setPosition(-2000, -2000);
   }
 
   // Position the single visible preview in the center
@@ -163,6 +165,12 @@ void Menu::updateOptionPositions() {
     sf::FloatRect textBounds = previews_[i].text.getLocalBounds();
     previews_[i].text.setPosition(x_pos - textBounds.width / 2,
                                  y_pos + (bounds.height * scale) / 2 + 20);
+
+    sf::FloatRect descBounds = previews_[i].description.getLocalBounds();
+    previews_[i].description.setOrigin(descBounds.left + descBounds.width / 2.0f,
+                                      descBounds.top + descBounds.height / 2.0f);
+    previews_[i].description.setPosition(
+        x_pos, y_pos + (bounds.height * scale) / 2 + 60 + descBounds.height / 2.0f);
 
     std::cout << "Centered level " << i << " at (" << x_pos << ", " << y_pos << ")" << std::endl;
   }
