@@ -10,6 +10,7 @@
 
 struct Level {
   std::vector<sf::RectangleShape> objects;
+  std::vector<sf::Texture> target_textures;
   std::vector<sf::CircleShape> targets;
   std::vector<sf::RectangleShape> floor;
 
@@ -36,7 +37,8 @@ struct Level {
 
   void setTargets(std::vector<sf::Vector2f> &objectSizes,
                   std::vector<std::pair<float, float>> &objectPos,
-                  std::vector<sf::Color> &objectColors);
+                  std::vector<sf::Color> &objectColors,
+                  const std::vector<std::string> &texturePaths);
   void setFloor(std::vector<sf::Vector2f> &objectSizes,
                 std::vector<std::pair<float, float>> &objectPos,
                 std::vector<sf::Color> &objectColors);

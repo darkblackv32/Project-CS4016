@@ -90,9 +90,13 @@ b2Body *Level::createBird(const sf::Vector2f &pos, float radius) {
 
 void Level::setTargets(std::vector<sf::Vector2f> &objectSizes,
                        std::vector<std::pair<float, float>> &objectPos,
-                       std::vector<sf::Color> &objectColors) {
+                       std::vector<sf::Color> &objectColors,
+                       const std::vector<std::string> &texturePaths) {
 
   std::vector<sf::CircleShape> objects;
+  if (!texturePaths.empty()) {
+    this->target_textures.resize(texturePaths.size());
+  }
   for (int i = 0; i < objectSizes.size(); i++) {
     // Physics
     b2Body *temp_target = nullptr;
@@ -121,7 +125,15 @@ void Level::setTargets(std::vector<sf::Vector2f> &objectSizes,
     float angle = temp_target->GetAngle() * 180.f / b2_pi;
 
     sf::CircleShape circle(fixture->GetShape()->m_radius * SCALE);
-    circle.setFillColor(objectColors[i]);
+    if (!texturePaths.empty() && i < texturePaths.size()) {
+      if (this->target_textures[i].loadFromFile(texturePaths[i])) {
+        circle.setTexture(&this->target_textures[i]);
+      } else {
+        circle.setFillColor(objectColors[i]);
+      }
+    } else {
+      circle.setFillColor(objectColors[i]);
+    }
     circle.setOrigin(circle.getRadius(), circle.getRadius());
     circle.setPosition(pos);
     circle.setRotation(angle);
@@ -220,6 +232,9 @@ void Level::render(sf::RenderWindow &ventana) {
       sf::CircleShape circle = targets[i];
       circle.setPosition(pos);
       circle.setRotation(angle);
+      if (i < this->target_textures.size()) {
+        circle.setTexture(&this->target_textures[i]);
+      }
       ventana.draw(circle);
 
       fixture = fixture->GetNext();
@@ -269,6 +284,7 @@ Level *return_level(int level, int width, int height) {
   float START_LEVEL_Y;
   int bound_x;
   int bound_y;
+  std::vector<std::string> texturePaths;
 
   switch (level) {
   case 0:
@@ -333,8 +349,9 @@ Level *return_level(int level, int width, int height) {
     objPositions = {
         std::make_pair(START_LEVEL_X + 5.5 * BLOCK, START_LEVEL_Y - BLOCK)};
     objColors = {{9, 186, 45}};
+    texturePaths.push_back("./assets/textures/milei/kirchner.png");
 
-    l->setTargets(objSizes, objPositions, objColors);
+    l->setTargets(objSizes, objPositions, objColors, texturePaths);
 
     break;
   case 1:
@@ -465,7 +482,11 @@ Level *return_level(int level, int width, int height) {
     objColors = {{9, 186, 45}, {9, 186, 45}, {9, 186, 45}, {9, 186, 45},
                  {9, 186, 45}, {9, 186, 45}, {9, 186, 45}};
 
-    l->setTargets(objSizes, objPositions, objColors);
+    texturePaths.clear();
+    for (int i = 0; i < objSizes.size(); ++i) {
+      texturePaths.push_back("./assets/textures/milei/kirchner.png");
+    }
+    l->setTargets(objSizes, objPositions, objColors, texturePaths);
 
     break;
   case 2:
@@ -570,8 +591,8 @@ Level *return_level(int level, int width, int height) {
     l->setObjects(objSizes, objPositions, objColors);
 
     objSizes = {sf::Vector2f(bound_x, BLOCK * 2),
-                sf::Vector2f(BLOCK * 5, BLOCK * 2),
-                sf::Vector2f(BLOCK * 5, BLOCK * 4)};
+            sf::Vector2f(BLOCK * 5, BLOCK * 2),
+            sf::Vector2f(BLOCK * 5, BLOCK * 4)};
     objPositions = {
         std::make_pair(0.0f, bound_y - 2 * BLOCK),
         std::make_pair(START_LEVEL_X + 5.5 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
@@ -593,7 +614,11 @@ Level *return_level(int level, int width, int height) {
     };
     objColors = {{9, 186, 45}, {9, 186, 45}, {9, 186, 45}};
 
-    l->setTargets(objSizes, objPositions, objColors);
+    texturePaths.clear();
+    texturePaths.push_back("./assets/textures/milei/fernandez.png");
+    texturePaths.push_back("./assets/textures/milei/kirchner.png");
+    texturePaths.push_back("./assets/textures/milei/massa.png");
+    l->setTargets(objSizes, objPositions, objColors, texturePaths);
 
     break;
   case 3:
@@ -734,7 +759,11 @@ Level *return_level(int level, int width, int height) {
     };
     objColors = {{9, 186, 45}, {9, 186, 45}, {9, 186, 45}};
 
-    l->setTargets(objSizes, objPositions, objColors);
+    texturePaths.clear();
+    for (int i = 0; i < objSizes.size(); ++i) {
+      texturePaths.push_back("./assets/textures/milei/kirchner.png");
+    }
+    l->setTargets(objSizes, objPositions, objColors, texturePaths);
 
     break;
   }
