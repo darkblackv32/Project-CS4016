@@ -590,15 +590,9 @@ Level *return_level(int level, int width, int height) {
 
     l->setObjects(objSizes, objPositions, objColors);
 
-    objSizes = {sf::Vector2f(bound_x, BLOCK * 2),
-            sf::Vector2f(BLOCK * 5, BLOCK * 2),
-            sf::Vector2f(BLOCK * 5, BLOCK * 4)};
-    objPositions = {
-        std::make_pair(0.0f, bound_y - 2 * BLOCK),
-        std::make_pair(START_LEVEL_X + 5.5 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
-        std::make_pair(START_LEVEL_X + 11.5 * BLOCK,
-                       START_LEVEL_Y - 4 * BLOCK)};
-    objColors = {{120, 110, 100}, {120, 110, 100}, {120, 110, 100}};
+    objSizes = {sf::Vector2f(bound_x, BLOCK * 2)};
+    objPositions = {std::make_pair(0.0f, bound_y - 2 * BLOCK)};
+    objColors = {{120, 110, 100}};
 
     l->setFloor(objSizes, objPositions, objColors);
 
@@ -716,7 +710,7 @@ Level *return_level(int level, int width, int height) {
         {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
         {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
         {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
-        {0, 0, 0}, {0, 0, 0},
+        {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
     };
 
     l->setObjects(objSizes, objPositions, objColors);

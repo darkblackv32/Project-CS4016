@@ -62,9 +62,10 @@ LevelPreview get_level_preview(int level) {
     break;
   case 3:
     preview.title = "Level 4";
-    preview.text.setString("Medium");
-    preview.description.setString("A medium difficulty level.");
-    imageLoaded = originalImage.loadFromFile("assets/textures/fujimori/1.png");
+    preview.text.setString("Congreso de la Republica");
+    preview.description.setString("El congreso ha sido tomado por la DBA,\n"
+                                  "ayuda a recuperarlo");
+    imageLoaded = originalImage.loadFromFile("assets/textures/palacio_gobierno.jpg");
     if (!imageLoaded) {
       originalImage.create(imageWidth, imageHeight, sf::Color::Yellow);
     }

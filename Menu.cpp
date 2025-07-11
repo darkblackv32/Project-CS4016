@@ -181,7 +181,7 @@ int Menu::get_level() { return level; }
 int render_menu(sf::RenderWindow &window) {
   // Only 3 levels available
   std::vector<LevelPreview> previews;
-  for (int i = 0; i < 3; ++i) {
+  for (int i = 0; i < 4; ++i) {
     previews.push_back(get_level_preview(i));
   }
 
