@@ -8,6 +8,7 @@
 #include "Levels.h"
 #include "Pause.h"
 #include "Physics.h"
+#include "PhysicsWrapper.h"
 #include "Slingshot.h"
 #include "helper.h"
 #include "polyphysics.h"
@@ -166,10 +167,8 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
         sf::Vector2f mousePos =
             ventana.mapPixelToCoords(sf::Mouse::getPosition(ventana));
         if (pajaro.lanzado && used == 0) {
-          // Apply linear impulse
-          // Can also be done with apply force, but then it needs to be applied
-          // continusly
-          // Change it to obtain in level
+          // This applies a dwon force making the stop condition of velocity
+          // less certain
           lev->add_efect_bird(bird_body);
           used = 1;
         } else if (pajaro.figura.getGlobalBounds().contains(mousePos) &&
@@ -265,9 +264,59 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     // Actualizacion de fisica
     float deltaTime = deltaClock.restart().asSeconds();
     lev->run(deltaTime);
+    // Iterate through the bodies marked for destruction by the PhysicsWrapper
+    for (b2Body *bodyToDestroy : lev->m_physics.toDestroy) {
+      // Find the index by searching
+      bool deleted = false;
+      for (size_t i = 0; i < lev->m_bodies.size(); ++i) {
+        if (lev->m_bodies[i] == bodyToDestroy) {
+          // 1. Get the user data associated with the body
+          bodyLife *userData =
+              static_cast<bodyLife *>(lev->m_bodies[i]->GetUserData());
+
+          // 2. Delete the SFML shape
+          lev->objects.erase(lev->objects.begin() +
+                             i); // Remove from shapes vector
+
+          // 3. Delete the custom user data
+          delete userData;
+
+          // 4. Destroy the Box2D body
+          // Calls m_world->DestroyBody()
+          lev->m_physics.DestroyBody(lev->m_bodies[i]);
+          lev->m_bodies.erase(lev->m_bodies.begin() + i);
+          deleted = true;
+          break;
+        }
+      }
+      if (!deleted) {
+        std::cout << "Is a target" << std::endl;
+        for (size_t i = 0; i < lev->m_targets.size(); ++i) {
+          if (lev->m_targets[i] == bodyToDestroy) {
+            // 1. Get the user data associated with the body
+            bodyLife *userData =
+                static_cast<bodyLife *>(lev->m_targets[i]->GetUserData());
+
+            // 2. Delete the SFML shape
+            lev->targets.erase(lev->targets.begin() +
+                               i); // Remove from shapes vector
+
+            // 3. Delete the custom user data
+            delete userData;
+
+            // 4. Destroy the Box2D body
+            // Calls m_world->DestroyBody()
+            lev->m_physics.DestroyBody(lev->m_targets[i]);
+            lev->m_targets.erase(lev->m_targets.begin() + i);
+            deleted = true;
+            break;
+          }
+        }
+      }
+    }
+    lev->m_physics.toDestroy.clear();
+
     // TODO
-    // Use energy to detect lives of pigs and objects and deduct accordingly
-    // Recomendation of professor
     // Also, when things dissapear, implement particle effects
 
     if (pajaro.lanzado) {
@@ -282,19 +331,16 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
 
       pajaro.sprite.setPosition(pajaro.figura.getPosition());
 
-      // updates the view to follow the bird
-      levelView.setCenter(pajaro.figura.getPosition().x,
-                          pajaro.figura.getPosition().y);
-      move_view(levelView, levelBounds);
-
       // Resets when the bird is done
       // Done means out of bounds or too slow. Other way in place of being too
       // slow could be used, like comparing x number of previous positions and
       // see the average difference to prevent the reset from being too sudden
       b2Vec2 velocity = bird_body->GetLinearVelocity();
+      std::cout << velocity.x << ", " << velocity.y << std::endl;
       if (pajaro.figura.getPosition().x < -100.0f ||
           pajaro.figura.getPosition().x > lev->x_bound + 100.0f ||
           pajaro.figura.getPosition().y > lev->y_bound + 100.0f ||
+          pajaro.figura.getPosition().y < -100.0f ||
           (abs(velocity.x) < THRESHOLD_VELOCITY &&
            abs(velocity.y) < THRESHOLD_VELOCITY)) {
         // removes the bird from the physics engine
@@ -302,6 +348,16 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
         // resets the variable
         pajaro.reset();
       }
+
+      // updates the view to follow the bird
+      levelView.setCenter(pajaro.figura.getPosition().x,
+                          pajaro.figura.getPosition().y);
+      move_view(levelView, levelBounds);
+    }
+
+    if (lev->targets.size() == 0) {
+      // Show victory screen and return
+      // TODO
     }
 
     ventana.clear();

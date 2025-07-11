@@ -1,5 +1,6 @@
 #include "Levels.h"
 #include "Constants.h"
+#include "PhysicsWrapper.h"
 #include "helper.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
@@ -26,7 +27,6 @@ void Level::setObjects(std::vector<sf::Vector2f> &objectSizes,
     b2Body *temp_body = createBox(objectPos[i].first + objectSizes[i].x / 2,
                                   objectPos[i].second + objectSizes[i].y / 2,
                                   objectSizes[i].x / 2, objectSizes[i].y / 2);
-    // SFML
     b2Fixture *fixture = temp_body->GetFixtureList();
     b2Shape::Type shapeType = fixture->GetType();
     sf::Vector2f pos = metersToPixels(temp_body->GetPosition());
@@ -36,6 +36,10 @@ void Level::setObjects(std::vector<sf::Vector2f> &objectSizes,
     // Asumimos que es una caja creada con SetAsBox
     b2Vec2 halfSize = poly->m_vertices[2];
 
+    bodyLife *object_life = new bodyLife(OBJECT_LIFE, OBJECT_DEFENSE);
+    temp_body->SetUserData(object_life);
+
+    // SFML
     sf::RectangleShape temp(
         sf::Vector2f(halfSize.x * 2 * SCALE, halfSize.y * 2 * SCALE));
     temp.setOrigin(temp.getSize().x / 2.f, temp.getSize().y / 2.f);
@@ -106,6 +110,9 @@ void Level::setTargets(std::vector<sf::Vector2f> &objectSizes,
     temp_target->SetAwake(false);
 
     m_targets.push_back(temp_target);
+
+    bodyLife *object_life = new bodyLife(TARGET_LIFE, TARGET_DEFENSE);
+    temp_target->SetUserData(object_life);
 
     // SFML
     b2Fixture *fixture = temp_target->GetFixtureList();
@@ -715,9 +722,17 @@ Level *return_level(int level, int width, int height) {
 
     l->setFloor(objSizes, objPositions, objColors);
 
-    objSizes = {};
-    objPositions = {};
-    objColors = {};
+    objSizes = {
+        sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
+        sf::Vector2f(2 * BLOCK / 2.0f, 2 * BLOCK / 2.0f),
+        sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
+    };
+    objPositions = {
+        std::make_pair(START_LEVEL_X + 2 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
+        std::make_pair(START_LEVEL_X + 10 * BLOCK, START_LEVEL_Y - 3 * BLOCK),
+        std::make_pair(START_LEVEL_X + 18 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
+    };
+    objColors = {{9, 186, 45}, {9, 186, 45}, {9, 186, 45}};
 
     l->setTargets(objSizes, objPositions, objColors);
 

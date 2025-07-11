@@ -13,90 +13,127 @@ struct ContactInfo;
 
 class PhysicsWrapper : public b2ContactListener {
 public:
-    using ContactCallback = std::function<void(b2Fixture* fixtureA, b2Fixture* fixtureB)>;
-    using PreSolveCallback = std::function<bool(b2Fixture* fixtureA, b2Fixture* fixtureB, const ContactInfo& info)>;
-    using PostSolveCallback = std::function<void(b2Fixture* fixtureA, b2Fixture* fixtureB, const b2ContactImpulse* impulse)>;
+  using ContactCallback =
+      std::function<void(b2Fixture *fixtureA, b2Fixture *fixtureB)>;
+  using PreSolveCallback = std::function<bool(
+      b2Fixture *fixtureA, b2Fixture *fixtureB, const ContactInfo &info)>;
+  using PostSolveCallback =
+      std::function<void(b2Fixture *fixtureA, b2Fixture *fixtureB,
+                         const b2ContactImpulse *impulse)>;
 
-    PhysicsWrapper(const b2Vec2& gravity = b2Vec2(0.0f, -9.8f));
-    ~PhysicsWrapper();
+  PhysicsWrapper(const b2Vec2 &gravity = b2Vec2(0.0f, -9.8f));
+  ~PhysicsWrapper();
 
-    void Update(float deltaTime);
+  void Update(float deltaTime);
 
-    b2Body* CreateBody(const b2BodyDef* def);
-    void DestroyBody(b2Body* body);
+  b2Body *CreateBody(const b2BodyDef *def);
+  void DestroyBody(b2Body *body);
 
-    b2Fixture* CreatePolygonFixture(b2Body* body, const b2PolygonShape* shape, float density = 1.0f);
-    b2Fixture* CreateCircleFixture(b2Body* body, const b2CircleShape* shape, float density = 1.0f);
-    b2Fixture* CreateBoxFixture(b2Body* body, float halfWidth, float halfHeight, float density = 1.0f);
+  b2Fixture *CreatePolygonFixture(b2Body *body, const b2PolygonShape *shape,
+                                  float density = 1.0f);
+  b2Fixture *CreateCircleFixture(b2Body *body, const b2CircleShape *shape,
+                                 float density = 1.0f);
+  b2Fixture *CreateBoxFixture(b2Body *body, float halfWidth, float halfHeight,
+                              float density = 1.0f);
 
-    void EnableCustomCollisionDetection(bool enable) { m_useCustomDetection = enable; }
-    bool IsCustomCollisionDetectionEnabled() const { return m_useCustomDetection; }
+  void EnableCustomCollisionDetection(bool enable) {
+    m_useCustomDetection = enable;
+  }
+  bool IsCustomCollisionDetectionEnabled() const {
+    return m_useCustomDetection;
+  }
 
-    void SetCollisionFilter(b2Fixture* fixture, uint16_t category, uint16_t mask);
+  void SetCollisionFilter(b2Fixture *fixture, uint16_t category, uint16_t mask);
 
-    void SetBeginContactCallback(ContactCallback callback) { m_beginContactCallback = callback; }
-    void SetEndContactCallback(ContactCallback callback) { m_endContactCallback = callback; }
-    void SetPreSolveCallback(PreSolveCallback callback) { m_preSolveCallback = callback; }
-    void SetPostSolveCallback(PostSolveCallback callback) { m_postSolveCallback = callback; }
+  void SetBeginContactCallback(ContactCallback callback) {
+    m_beginContactCallback = callback;
+  }
+  void SetEndContactCallback(ContactCallback callback) {
+    m_endContactCallback = callback;
+  }
+  void SetPreSolveCallback(PreSolveCallback callback) {
+    m_preSolveCallback = callback;
+  }
+  void SetPostSolveCallback(PostSolveCallback callback) {
+    m_postSolveCallback = callback;
+  }
 
-    b2World* GetWorld() { return m_world.get(); }
-    const b2World* GetWorld() const { return m_world.get(); }
+  b2World *GetWorld() { return m_world.get(); }
+  const b2World *GetWorld() const { return m_world.get(); }
 
-    void SetDebugDraw(b2Draw* debugDraw);
-    void DrawDebugData();
+  void SetDebugDraw(b2Draw *debugDraw);
+  void DrawDebugData();
 
-    void QueryAABB(const b2AABB& aabb, std::vector<b2Fixture*>& fixtures);
-    bool RayCast(const b2Vec2& start, const b2Vec2& end, b2RayCastOutput& output, b2Fixture** hitFixture = nullptr);
+  void QueryAABB(const b2AABB &aabb, std::vector<b2Fixture *> &fixtures);
+  bool RayCast(const b2Vec2 &start, const b2Vec2 &end, b2RayCastOutput &output,
+               b2Fixture **hitFixture = nullptr);
+  // to delete after the step in update
+  // Should move to private, however we need to use it in the game loop to
+  // remove the sfml objects
+  std::vector<b2Body *> toDestroy;
 
 protected:
-    void BeginContact(b2Contact* contact) override;
-    void EndContact(b2Contact* contact) override;
-    void PreSolve(b2Contact* contact, const b2Manifold* oldManifold) override;
-    void PostSolve(b2Contact* contact, const b2ContactImpulse* impulse) override;
+  void BeginContact(b2Contact *contact) override;
+  void EndContact(b2Contact *contact) override;
+  void PreSolve(b2Contact *contact, const b2Manifold *oldManifold) override;
+  void PostSolve(b2Contact *contact, const b2ContactImpulse *impulse) override;
 
 private:
-    ContactInfo PerformCustomCollisionCheck(b2Fixture* fixtureA, b2Fixture* fixtureB, const b2Transform& xfA, const b2Transform& xfB);
+  ContactInfo PerformCustomCollisionCheck(b2Fixture *fixtureA,
+                                          b2Fixture *fixtureB,
+                                          const b2Transform &xfA,
+                                          const b2Transform &xfB);
 
-    std::unique_ptr<b2World> m_world;
-    bool m_useCustomDetection;
+  std::unique_ptr<b2World> m_world;
+  bool m_useCustomDetection;
 
-    ContactCallback m_beginContactCallback;
-    ContactCallback m_endContactCallback;
-    PreSolveCallback m_preSolveCallback;
-    PostSolveCallback m_postSolveCallback;
+  ContactCallback m_beginContactCallback;
+  ContactCallback m_endContactCallback;
+  PreSolveCallback m_preSolveCallback;
+  PostSolveCallback m_postSolveCallback;
 
-    std::unordered_map<b2Contact*, ContactInfo> m_contactCache;
+  std::unordered_map<b2Contact *, ContactInfo> m_contactCache;
 
-    int32_t m_velocityIterations;
-    int32_t m_positionIterations;
+  int32_t m_velocityIterations;
+  int32_t m_positionIterations;
 };
 
 class AABBQueryCallback : public b2QueryCallback {
 public:
-    std::vector<b2Fixture*>* fixtures;
+  std::vector<b2Fixture *> *fixtures;
 
-    bool ReportFixture(b2Fixture* fixture) override {
-        fixtures->push_back(fixture);
-        return true; // Continuar la query
-    }
+  bool ReportFixture(b2Fixture *fixture) override {
+    fixtures->push_back(fixture);
+    return true; // Continuar la query
+  }
 };
 
 class RayCastCallback : public b2RayCastCallback {
 public:
-    bool hasHit = false;
-    b2Fixture* fixture = nullptr;
-    b2Vec2 point;
-    b2Vec2 normal;
-    float fraction = 1.0f;
+  bool hasHit = false;
+  b2Fixture *fixture = nullptr;
+  b2Vec2 point;
+  b2Vec2 normal;
+  float fraction = 1.0f;
 
-    float ReportFixture(b2Fixture* f, const b2Vec2& p, const b2Vec2& n, float fr) override {
-        hasHit = true;
-        fixture = f;
-        point = p;
-        normal = n;
-        fraction = fr;
-        return fr;
-    }
+  float ReportFixture(b2Fixture *f, const b2Vec2 &p, const b2Vec2 &n,
+                      float fr) override {
+    hasHit = true;
+    fixture = f;
+    point = p;
+    normal = n;
+    fraction = fr;
+    return fr;
+  }
 };
 
-#endif //PHYSICSWRAPPER_H
+// For objects to have life
+struct bodyLife {
+  float current_life;
+  float defense;
+  bool isDestroyed;
+  bodyLife(float life, float def)
+      : current_life(life), isDestroyed(false), defense(def) {}
+};
+
+#endif // PHYSICSWRAPPER_H
