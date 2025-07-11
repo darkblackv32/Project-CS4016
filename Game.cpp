@@ -107,8 +107,27 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   int response = 1;
 
   sf::Texture backgroundTexture;
-  if (!backgroundTexture.loadFromFile("assets/textures/palacio_gobierno.jpg")) {
-    throw std::runtime_error("Failed to load background texture");
+  std::string backgroundPath;
+  switch (level) {
+  case 0:
+  case 1:
+    backgroundPath = "assets/textures/city1.png";
+    break;
+  case 2:
+    backgroundPath = "assets/textures/city2.jpg";
+    break;
+  case 3:
+    backgroundPath = "assets/textures/palacio_gobierno.jpg";
+    break;
+  default:
+    // Optional: a default background if level is out of range
+    backgroundPath = "assets/textures/palacio_gobierno.jpg";
+    break;
+  }
+
+  if (!backgroundTexture.loadFromFile(backgroundPath)) {
+    throw std::runtime_error("Failed to load background texture for level " +
+                           std::to_string(level));
   }
 
   sf::RectangleShape fondo(
