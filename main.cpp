@@ -43,13 +43,18 @@ int main() {
         gameState = 1;
       } else if (next == 2) { // level selection
         gameState = 2;
-      } else if (next == -1) { // quit
+      } else if (next == -1 || next == 3) { // quit
         ventana.close();
       }
     } else if (gameState == 1) {
       music.stop();
       int response =
           render_bird_game(ventana, level, width, height, currentBirdType);
+
+      // Review this code to make sure that when the window is resized and the
+      // view is moved, when we return things still look normal
+      // TODO
+      ventana.setView(ventana.getDefaultView());
       if (response == 2) {
         gameState = 0;
       } else if (response == 3) {

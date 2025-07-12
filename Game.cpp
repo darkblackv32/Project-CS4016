@@ -350,7 +350,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       if (pajaro.figura.getPosition().x < -100.0f ||
           pajaro.figura.getPosition().x > lev->x_bound + 100.0f ||
           pajaro.figura.getPosition().y > lev->y_bound + 100.0f ||
-          pajaro.figura.getPosition().y < -100.0f ||
+          pajaro.figura.getPosition().y < -300.0f ||
           (abs(velocity.x) < THRESHOLD_VELOCITY &&
            abs(velocity.y) < THRESHOLD_VELOCITY)) {
         // removes the bird from the physics engine
@@ -406,7 +406,6 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
 
   if (response == 0) {
     response = victory_screen(ventana, fondo, lev, resortera, pajaro);
-    ventana.setView(ventana.getDefaultView());
   }
 
   delete lev;

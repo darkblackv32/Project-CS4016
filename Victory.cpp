@@ -8,6 +8,11 @@ int victory_screen(sf::RenderWindow &window, sf::RectangleShape &fondo,
     std::cout << "Couldn't load font" << std::endl;
   }
 
+  // Get the current view's properties
+  sf::View currentView = window.getView();
+  sf::Vector2f viewCenter = currentView.getCenter();
+  sf::Vector2f viewSize = currentView.getSize();
+
   // background
   sf::RectangleShape backgroundRect;
   backgroundRect.setSize(sf::Vector2f(700, 100));
@@ -17,9 +22,11 @@ int victory_screen(sf::RenderWindow &window, sf::RectangleShape &fondo,
   backgroundRect.setOutlineColor(sf::Color::White);
   backgroundRect.setOrigin(backgroundRect.getLocalBounds().width / 2.0f,
                            backgroundRect.getLocalBounds().height / 2.0f);
-  backgroundRect.setPosition(window.getSize().x / 2.0f,
-                             window.getSize().y / 3.0f * 2.0f +
-                                 5); // Adjusted to center around buttons
+  // Position relative to view center
+  backgroundRect.setPosition(
+      viewCenter.x,
+      viewCenter.y +
+          viewSize.y / 6.0f); // Adjusted to center around buttons below message
 
   // Congratulations Message
   sf::Text congratulationsText;
@@ -30,8 +37,10 @@ int victory_screen(sf::RenderWindow &window, sf::RectangleShape &fondo,
   sf::FloatRect textBounds = congratulationsText.getLocalBounds();
   congratulationsText.setOrigin(textBounds.left + textBounds.width / 2.0f,
                                 textBounds.top + textBounds.height / 2.0f);
-  congratulationsText.setPosition(window.getSize().x / 2.0f,
-                                  window.getSize().y / 3.0f);
+  // Position relative to view center
+  congratulationsText.setPosition(
+      viewCenter.x,
+      viewCenter.y - viewSize.y / 4.0f); // Position above buttons
 
   // Play Again Button
   sf::RectangleShape restartButton;
@@ -41,8 +50,9 @@ int victory_screen(sf::RenderWindow &window, sf::RectangleShape &fondo,
   restartButton.setOutlineColor(sf::Color::White);
   restartButton.setOrigin(restartButton.getLocalBounds().width / 2.0f,
                           restartButton.getLocalBounds().height / 2.0f);
-  restartButton.setPosition(window.getSize().x / 2.0f - 220,
-                            window.getSize().y / 3.0f * 2.0f);
+  // Position relative to view center
+  restartButton.setPosition(viewCenter.x - 220,
+                            viewCenter.y + viewSize.y / 6.0f);
 
   sf::Text restartText;
   restartText.setFont(font);
@@ -63,8 +73,8 @@ int victory_screen(sf::RenderWindow &window, sf::RectangleShape &fondo,
   menuButton.setOutlineColor(sf::Color::White);
   menuButton.setOrigin(menuButton.getLocalBounds().width / 2.0f,
                        menuButton.getLocalBounds().height / 2.0f);
-  menuButton.setPosition(window.getSize().x / 2.0f,
-                         window.getSize().y / 3.0f * 2.0f);
+  // Position relative to view center
+  menuButton.setPosition(viewCenter.x, viewCenter.y + viewSize.y / 6.0f);
 
   sf::Text menuText;
   menuText.setFont(font);
@@ -84,8 +94,8 @@ int victory_screen(sf::RenderWindow &window, sf::RectangleShape &fondo,
   quitButton.setOutlineColor(sf::Color::White);
   quitButton.setOrigin(quitButton.getLocalBounds().width / 2.0f,
                        quitButton.getLocalBounds().height / 2.0f);
-  quitButton.setPosition(window.getSize().x / 2.0f + 220,
-                         window.getSize().y / 3.0f * 2.0f);
+  // Position relative to view center
+  quitButton.setPosition(viewCenter.x + 220, viewCenter.y + viewSize.y / 6.0f);
 
   sf::Text quitText;
   quitText.setFont(font);
@@ -106,8 +116,10 @@ int victory_screen(sf::RenderWindow &window, sf::RectangleShape &fondo,
 
       if (event.type == sf::Event::MouseButtonPressed) {
         if (event.mouseButton.button == sf::Mouse::Left) {
+          // Map pixel coordinates to world coordinates using the current view
           sf::Vector2f mousePos = window.mapPixelToCoords(
-              sf::Vector2i(event.mouseButton.x, event.mouseButton.y));
+              sf::Vector2i(event.mouseButton.x, event.mouseButton.y),
+              currentView); // Pass currentView
 
           if (restartButton.getGlobalBounds().contains(mousePos)) {
             return 4;
@@ -122,15 +134,16 @@ int victory_screen(sf::RenderWindow &window, sf::RectangleShape &fondo,
 
     window.clear(sf::Color::Black);
 
-    // level stuf as background
+    // level stuff as background
     window.draw(fondo);
+    lev->render(window);
     pajaro.draw(window);
     resortera.draw(window);
-    lev->render(window);
 
+    // Draw elements in the correct order
+    window.draw(backgroundRect); // Draw background first
     window.draw(congratulationsText);
     window.draw(restartButton);
-    window.draw(backgroundRect);
     window.draw(restartText);
     window.draw(menuButton);
     window.draw(menuText);
