@@ -217,12 +217,23 @@ void Level::render(sf::RenderWindow &ventana) {
     }
   }
 
+  // vector to have the bodies outside the level
+  std::vector<int> idx_remove;
   for (int i = 0; i < this->targets.size(); i++) {
+    // check if outside the bounds to delete
+
     b2Body *body = m_targets[i];
+    sf::Vector2f pos = metersToPixels(body->GetPosition());
+    if (pos.x > x_bound + 100 || pos.x < -100 || pos.y > y_bound + 100) {
+      idx_remove.push_back(i);
+      continue;
+    }
+
     b2Fixture *fixture = body->GetFixtureList();
+
     while (fixture) {
       b2Shape::Type shapeType = fixture->GetType();
-      sf::Vector2f pos = metersToPixels(body->GetPosition());
+      pos = metersToPixels(body->GetPosition());
       float angle = body->GetAngle() * 180.f / b2_pi;
 
       b2PolygonShape *poly = (b2PolygonShape *)fixture->GetShape();
@@ -239,6 +250,20 @@ void Level::render(sf::RenderWindow &ventana) {
 
       fixture = fixture->GetNext();
     }
+  }
+
+  int deleted_so_far = 0;
+  for (auto i : idx_remove) {
+    bodyLife *userData = static_cast<bodyLife *>(m_targets[i]->GetUserData());
+
+    targets.erase(targets.begin() + i - deleted_so_far);
+
+    delete userData;
+
+    m_physics.DestroyBody(m_targets[i - deleted_so_far]);
+    m_targets.erase(m_targets.begin() + i - deleted_so_far);
+
+    deleted_so_far++;
   }
 }
 
@@ -270,6 +295,8 @@ void Level::add_efect_bird(b2Body *bird_body) {
   case 3:
     impulse = b2Vec2(0.0f, EXTRA_IMPULSE_DOWN);
     bird_body->ApplyLinearImpulseToCenter(impulse, true);
+    break;
+  default:
     break;
   }
 }
@@ -760,6 +787,54 @@ Level *return_level(int level, int width, int height) {
         std::make_pair(START_LEVEL_X + 18 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
     };
     objColors = {{9, 186, 45}, {9, 186, 45}, {9, 186, 45}};
+
+    texturePaths.clear();
+    for (int i = 0; i < objSizes.size(); ++i) {
+      texturePaths.push_back("./assets/textures/milei/kirchner.png");
+    }
+    l->setTargets(objSizes, objPositions, objColors, texturePaths);
+
+    break;
+
+  case 4:
+    // Level for testing the killing of birds
+    bound_x = 2000;
+    bound_y = 1000;
+    START_LEVEL_X = bound_x - BLOCK * 26;
+    START_LEVEL_Y = bound_y - BLOCK * 2;
+
+    l->setStarts(START_LEVEL_X, START_LEVEL_Y);
+
+    l->setBounds(bound_x, bound_y);
+
+    objSizes = {};
+
+    objPositions = {};
+
+    objColors = {};
+
+    l->setObjects(objSizes, objPositions, objColors);
+
+    objSizes = {
+        sf::Vector2f(bound_x, BLOCK * 2),
+        sf::Vector2f(BLOCK, BLOCK * 12),
+    };
+    objPositions = {
+        std::make_pair(0.0f, bound_y - 2 * BLOCK),
+        // sides
+        std::make_pair(START_LEVEL_X + 20 * BLOCK, START_LEVEL_Y - 12 * BLOCK),
+    };
+    objColors = {{120, 110, 100}, {120, 110, 100}};
+
+    l->setFloor(objSizes, objPositions, objColors);
+
+    objSizes = {
+        sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
+    };
+    objPositions = {
+        std::make_pair(START_LEVEL_X + 2 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
+    };
+    objColors = {{9, 186, 45}};
 
     texturePaths.clear();
     for (int i = 0; i < objSizes.size(); ++i) {

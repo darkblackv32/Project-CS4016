@@ -31,4 +31,4 @@ const float OBJECT_DEFENSE = 10.0f;
 const float TARGET_LIFE = 10.0f;
 const float TARGET_DEFENSE = 3.0f;
 // 0.1 percent of a impulse is damage
-const float DAMAGE_MULTIPLIER = 0.1f;
+const float DAMAGE_MULTIPLIER = 0.2f;

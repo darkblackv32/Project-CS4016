@@ -143,6 +143,7 @@ void PhysicsWrapper::PostSolve(b2Contact *contact,
   // Ensure both bodies have our custom user data and are dynamic
   if (userDataA && bodyA->GetType() == b2_dynamicBody &&
       userDataA->defense < totalImpulse) {
+    std::cout << "Damage: " << damage << std::endl;
     userDataA->current_life -= damage;
     std::cout << "Body A hit! Remaining life: " << userDataA->current_life
               << std::endl;
@@ -158,6 +159,7 @@ void PhysicsWrapper::PostSolve(b2Contact *contact,
 
   if (userDataB && bodyB->GetType() == b2_dynamicBody &&
       userDataB->defense < totalImpulse) {
+    std::cout << "Damage: " << damage << std::endl;
     userDataB->current_life -= damage;
     std::cout << "Body B hit! Remaining life: " << userDataB->current_life
               << std::endl;
@@ -167,7 +169,7 @@ void PhysicsWrapper::PostSolve(b2Contact *contact,
             toDestroy.end()) {
       std::cout << "Body B destroyed!" << std::endl;
       userDataB->isDestroyed = true;
-      this->toDestroy.push_back(bodyA);
+      this->toDestroy.push_back(bodyB);
     }
   }
 

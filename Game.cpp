@@ -10,6 +10,7 @@
 #include "Physics.h"
 #include "PhysicsWrapper.h"
 #include "Slingshot.h"
+#include "Victory.h"
 #include "helper.h"
 #include "polyphysics.h"
 #include <vector>
@@ -103,8 +104,8 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   ventana.setView(levelView);
   int move = 0;
 
-  // For the pause menu
-  int response = 1;
+  // For the pause/victory menu
+  int response = 0;
 
   sf::Texture backgroundTexture;
   std::string backgroundPath;
@@ -355,7 +356,6 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       // slow could be used, like comparing x number of previous positions and
       // see the average difference to prevent the reset from being too sudden
       b2Vec2 velocity = bird_body->GetLinearVelocity();
-      std::cout << velocity.x << ", " << velocity.y << std::endl;
       if (pajaro.figura.getPosition().x < -100.0f ||
           pajaro.figura.getPosition().x > lev->x_bound + 100.0f ||
           pajaro.figura.getPosition().y > lev->y_bound + 100.0f ||
@@ -375,8 +375,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     }
 
     if (lev->targets.size() == 0) {
-      // Show victory screen and return
-      // TODO
+      break;
     }
 
     ventana.clear();
@@ -410,8 +409,13 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     }
 
     pajaro.draw(ventana);
-    ventana.draw(instructionText);
+    // ventana.draw(instructionText);
     ventana.display();
+  }
+
+  if (response == 0) {
+    response = victory_screen(ventana, fondo, lev, resortera, pajaro);
+    ventana.setView(ventana.getDefaultView());
   }
 
   delete lev;
