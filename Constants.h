@@ -28,7 +28,7 @@ const float EXTRA_IMPULSE_DOWN = 400.0f;
 const float EXTRA_IMPULSE_RIGHT = 200.0f;
 const float OBJECT_LIFE = 100.0f;
 const float OBJECT_DEFENSE = 10.0f;
-const float TARGET_LIFE = 20.0f;
-const float TARGET_DEFENSE = 5.0f;
+const float TARGET_LIFE = 10.0f;
+const float TARGET_DEFENSE = 3.0f;
 // 0.1 percent of a impulse is damage
 const float DAMAGE_MULTIPLIER = 0.1f;

@@ -94,7 +94,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     return -1;
   }
 
-  sf::View levelView(sf::FloatRect(0, 0, 800, 600));
+  sf::View levelView(sf::FloatRect(0, 0, lev->x_bound, lev->y_bound));
   sf::FloatRect levelBounds(0, 0, lev->x_bound, lev->y_bound);
   sf::Vector2f previousMousePos;
   sf::Vector2f pos_resortera(100.0f, lev->y_bound - 130.0f);
@@ -127,7 +127,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
 
   if (!backgroundTexture.loadFromFile(backgroundPath)) {
     throw std::runtime_error("Failed to load background texture for level " +
-                           std::to_string(level));
+                             std::to_string(level));
   }
 
   sf::RectangleShape fondo(
