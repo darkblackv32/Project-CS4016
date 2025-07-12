@@ -7,12 +7,10 @@
 #include "Constants.h"
 #include "Levels.h"
 #include "Pause.h"
-#include "Physics.h"
 #include "PhysicsWrapper.h"
 #include "Slingshot.h"
 #include "Victory.h"
 #include "helper.h"
-#include "polyphysics.h"
 #include <vector>
 
 #include <SFML/Audio.hpp>
@@ -98,7 +96,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   sf::View levelView(sf::FloatRect(0, 0, lev->x_bound, lev->y_bound));
   sf::FloatRect levelBounds(0, 0, lev->x_bound, lev->y_bound);
   sf::Vector2f previousMousePos;
-  sf::Vector2f pos_resortera(100.0f, lev->y_bound - 130.0f);
+  sf::Vector2f pos_resortera(150.0f, lev->y_bound - 5.5 * BLOCK);
   levelView.setCenter(lev->x_bound / 2, lev->y_bound / 2);
   // move represents 0 for the bird and 1 for the camera
   ventana.setView(levelView);
@@ -259,13 +257,6 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
         pajaro.sprite.setPosition(nuevaPos);
       }
 
-      try {
-        trayectoria = Physics::calcularTrayectoria(
-            nuevaPos, (pos_resortera - nuevaPos) * FUERZA_MULTIPLICADOR,
-            TRAJECTORY_STEP, GRAVEDAD);
-      } catch (...) {
-        trayectoria.clear();
-      }
     } else if (arrastrando && move == 1) {
       sf::Vector2f mousePos =
           ventana.mapPixelToCoords(sf::Mouse::getPosition(ventana), levelView);
