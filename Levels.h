@@ -1,18 +1,22 @@
 #pragma once
 
-#include "polyphysics.h"
+#include "PhysicsWrapper.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
+#include <SFML/System/Vector2.hpp>
+#include <memory>
 #include <utility>
 #include <vector>
 
 struct Level {
   std::vector<sf::RectangleShape> objects;
-  std::vector<sf::RectangleShape> targets;
+  std::vector<sf::Texture> target_textures;
+  std::vector<sf::CircleShape> targets;
   std::vector<sf::RectangleShape> floor;
 
-  std::vector<int> object_ids;
-  std::vector<int> targets_ids;
+  std::vector<b2Body *> m_bodies;
+  std::vector<b2Body *> m_targets;
+  std::vector<b2Body *> m_static;
 
   float START_LEVEL_X;
   float START_LEVEL_Y;
@@ -20,7 +24,9 @@ struct Level {
   int x_bound;
   int y_bound;
 
-  PhysicsEngine physicsEngine;
+  int n_level;
+
+  PhysicsWrapper m_physics;
 
   Level();
   ~Level();
@@ -31,21 +37,39 @@ struct Level {
 
   void setTargets(std::vector<sf::Vector2f> &objectSizes,
                   std::vector<std::pair<float, float>> &objectPos,
-                  std::vector<sf::Color> &objectColors);
+                  std::vector<sf::Color> &objectColors,
+                  const std::vector<std::string> &texturePaths);
   void setFloor(std::vector<sf::Vector2f> &objectSizes,
                 std::vector<std::pair<float, float>> &objectPos,
                 std::vector<sf::Color> &objectColors);
 
   void setStarts(float x, float y);
+  void setNLevel(int n);
 
   void setBounds(float x, float y);
 
+  b2Body *createBox(float x, float y, float halfWidth, float halfHeight);
+  b2Body *createBird(const sf::Vector2f &pos, float radius);
+
   void render(sf::RenderWindow &ventana);
   void run(float deltaTime);
+  int over();
+
+  void add_efect_bird(b2Body *bird_body);
 
   void update();
 };
 
+struct LevelPreview {
+  std::string title;
+  sf::Text text;
+  sf::Text description;
+  std::shared_ptr<sf::Font> font;
+  std::shared_ptr<sf::Texture> texture;
+  sf::Sprite sprite;
+};
+
 Level *return_level(int level, int width, int height);
+LevelPreview get_level_preview(int level);
 
 void test_level(int level);

@@ -1,6 +1,7 @@
 #ifndef MENU_H_
 #define MENU_H_
 
+#include "Levels.h"
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include <vector>
@@ -11,11 +12,10 @@ private:
 
   sf::RenderWindow &window_;
   std::string title_;
-  std::vector<std::string> options_;
+  std::vector<LevelPreview> previews_;
   int current_page_;
   sf::Font font_;
   sf::Text title_text_;
-  std::vector<sf::Text> option_texts_;
 
   // Buttons
   sf::Texture button_texture_left_;
@@ -30,7 +30,7 @@ private:
 
 public:
   Menu(sf::RenderWindow &window, const std::string &title,
-       const std::vector<std::string> &options);
+       std::vector<LevelPreview> &previews);
   void handleInput(const sf::Event &event);
 
   void draw();
