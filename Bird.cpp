@@ -1,5 +1,6 @@
 #include "Bird.h"
-#include "Constants.h"
+#include "Constants.h" // Ensure BLOCK is defined here
+#include <algorithm>   // For std::max
 #include <iostream>
 
 // static cache
@@ -9,10 +10,11 @@ std::unordered_map<BirdType, std::pair<std::unique_ptr<sf::Texture>,
 
 Bird::Bird(BirdType birdType, sf::Vector2f pr)
     : type(birdType), pos_resortera(pr) {
-  figura.setRadius(BIRD_RADIUS);
+  figura.setRadius(BLOCK); // BLOCK is the radius
   figura.setFillColor(sf::Color::Transparent);
   figura.setOutlineThickness(0);
-  figura.setOrigin(44.0f, 44.0f);
+  // Origin should be at the center of the circle (radius, radius)
+  figura.setOrigin(BLOCK, BLOCK);
   figura.setPosition(pos_resortera);
   loadTextures();
 }
@@ -52,18 +54,28 @@ void Bird::loadTextures() {
     idleTexture = entry.first.get();
     flyingTexture = entry.second.get();
     break;
-    }
+  }
   }
 
-  const sf::Texture *initialTexture =
-      idleTexture ? idleTexture : flyingTexture; // sprite
+  const sf::Texture *initialTexture = idleTexture ? idleTexture : flyingTexture;
   if (initialTexture) {
     sprite.setTexture(*initialTexture, true);
-    float scale = 88.0f / std::max(initialTexture->getSize().x,
-                                   initialTexture->getSize().y);
-    sprite.setScale(scale, scale);
-    sprite.setOrigin(initialTexture->getSize().x / 2.0f,
-                     initialTexture->getSize().y / 2.0f);
+
+    // Calculate scale to fit the sprite within the circle's diameter (2 *
+    // BLOCK)
+    float targetDiameter = BLOCK * 2.0f;
+    float textureWidth = static_cast<float>(initialTexture->getSize().x);
+    float textureHeight = static_cast<float>(initialTexture->getSize().y);
+
+    // Scale both dimensions independently to fit the target diameter
+    // This might stretch non-square textures to fit the circle, which is
+    // usually desired for bird sprites
+    float scaleX = targetDiameter / textureWidth;
+    float scaleY = targetDiameter / textureHeight;
+
+    sprite.setScale(scaleX, scaleY);
+    // Set sprite origin to its center for correct positioning
+    sprite.setOrigin(textureWidth / 2.0f, textureHeight / 2.0f);
     sprite.setPosition(figura.getPosition());
   }
 }
@@ -74,9 +86,17 @@ void Bird::updateTextureState() {
     return;
 
   sprite.setTexture(*desired, true);
-  float scale = 88.0f / std::max(desired->getSize().x, desired->getSize().y);
-  sprite.setScale(scale, scale);
-  sprite.setOrigin(desired->getSize().x / 2.0f, desired->getSize().y / 2.0f);
+
+  // Recalculate scale for the new texture
+  float targetDiameter = BLOCK * 2.0f;
+  float textureWidth = static_cast<float>(desired->getSize().x);
+  float textureHeight = static_cast<float>(desired->getSize().y);
+
+  float scaleX = targetDiameter / textureWidth;
+  float scaleY = targetDiameter / textureHeight;
+
+  sprite.setScale(scaleX, scaleY);
+  sprite.setOrigin(textureWidth / 2.0f, textureHeight / 2.0f);
 }
 
 void Bird::reset() {
@@ -92,8 +112,8 @@ void Bird::setBirdType(BirdType birdType) {
   if (type == birdType)
     return;
   type = birdType;
-  loadTextures();
-  updateTextureState();
+  loadTextures();       // Reload textures for new type
+  updateTextureState(); // Ensure sprite state is updated after texture change
 }
 
 BirdType Bird::getBirdType() const { return type; }
