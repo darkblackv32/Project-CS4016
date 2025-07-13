@@ -117,14 +117,14 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     backgroundPath = "assets/textures/city1.png";
     break;
   case 2:
-    backgroundPath = "assets/textures/city2.jpg";
+    backgroundPath = "assets/textures/city2.png";
     break;
   case 3:
-    backgroundPath = "assets/textures/palacio_gobierno.jpg";
+    backgroundPath = "assets/textures/city3.png";
     break;
   default:
     // Optional: a default background if level is out of range
-    backgroundPath = "assets/textures/palacio_gobierno.jpg";
+    backgroundPath = "assets/textures/city4.png";
     break;
   }
 
@@ -140,6 +140,11 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   // IMPORTANT
   // TODO
   // FIx scaling from the texture. Currently, the texture goes over the circle
+  if (level == 0 || level == 1) {
+    birdType = BirdType::FUJIMORI;
+  } else {
+    birdType = BirdType::MILEI;
+  }
   Bird pajaro(birdType, pos_resortera);
   Slingshot resortera(pos_resortera);
 
@@ -158,10 +163,12 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     }
   }
 
+  /*
   sf::Text instructionText(
       "Press 1-3 to change bird: 1=Default, 2=Milei, 3=Fujimori", font, 16);
   instructionText.setPosition(10, 10);
   instructionText.setFillColor(sf::Color::Black);
+  */
 
   // Reloj para medir el tiempo delta (deltaTime)
   sf::Clock deltaClock;
@@ -173,13 +180,15 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
         ventana.close();
 
       if (evento.type == sf::Event::KeyPressed) {
+        /*
         if (evento.key.code == sf::Keyboard::Num2 ||
             evento.key.code == sf::Keyboard::Numpad2) {
           pajaro.setBirdType(BirdType::MILEI);
         } else if (evento.key.code == sf::Keyboard::Num3 ||
                    evento.key.code == sf::Keyboard::Numpad3) {
           pajaro.setBirdType(BirdType::FUJIMORI);
-        } else if (evento.key.code == sf::Keyboard::Escape) {
+        } else*/
+        if (evento.key.code == sf::Keyboard::Escape) {
           response = render_pause_menu(ventana);
         }
       }
