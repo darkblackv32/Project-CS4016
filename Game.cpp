@@ -56,6 +56,9 @@ void move_view(sf::View &levelView, sf::FloatRect &levelBounds) {
 void playBirdSound(BirdType birdType) {
   static sf::SoundBuffer mileiBuffer;
   static sf::SoundBuffer fujimoriBuffer;
+  static sf::SoundBuffer kenjiBuffer;
+  static sf::SoundBuffer montesinosBuffer;
+  static sf::SoundBuffer garciaBuffer;
   static bool buffersLoaded = false;
   static sf::Sound sound;
 
@@ -69,15 +72,39 @@ void playBirdSound(BirdType birdType) {
       std::cerr << "Failed to load audios/fujimori.ogg" << std::endl;
       loaded = false;
     }
+    if (!kenjiBuffer.loadFromFile("assets/audios/kenji2.ogg")) {
+      std::cerr << "Failed to load audios/kenji.ogg" << std::endl;
+      loaded = false;
+    }
+    if (!montesinosBuffer.loadFromFile("assets/audios/hayek.ogg")) {
+      std::cerr << "Failed to load audios/montesinos.ogg" << std::endl;
+      loaded = false;
+    }
+    if (!garciaBuffer.loadFromFile("assets/audios/alan1.ogg")) {
+      std::cerr << "Failed to load audios/alan.ogg" << std::endl;
+      loaded = false;
+    }
     buffersLoaded = loaded;
     if (!loaded)
       return;
   }
 
-  if (birdType == BirdType::MILEI) {
+  switch (birdType) {
+  case BirdType::MILEI:
     sound.setBuffer(mileiBuffer);
-  } else {
+    break;
+  case BirdType::FUJIMORI:
     sound.setBuffer(fujimoriBuffer);
+    break;
+  case BirdType::KENJI:
+    sound.setBuffer(kenjiBuffer);
+    break;
+  case BirdType::MONTESINOS:
+    sound.setBuffer(montesinosBuffer);
+    break;
+  case BirdType::GARCIA:
+    sound.setBuffer(garciaBuffer);
+    break;
   }
 
   sound.play();
@@ -117,14 +144,14 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     backgroundPath = "assets/textures/city1.png";
     break;
   case 2:
-    backgroundPath = "assets/textures/city2.jpg";
+    backgroundPath = "assets/textures/city2.png";
     break;
   case 3:
-    backgroundPath = "assets/textures/palacio_gobierno.jpg";
+    backgroundPath = "assets/textures/city3.png";
     break;
   default:
     // Optional: a default background if level is out of range
-    backgroundPath = "assets/textures/palacio_gobierno.jpg";
+    backgroundPath = "assets/textures/city4.png";
     break;
   }
 
@@ -140,6 +167,17 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   // IMPORTANT
   // TODO
   // FIx scaling from the texture. Currently, the texture goes over the circle
+  if (level == 0) {
+    birdType = BirdType::FUJIMORI;
+  } else if (level == 1) {
+    birdType = BirdType::KENJI;
+  } else if (level == 2) {
+    birdType = BirdType::MONTESINOS;
+  } else if (level == 3) {
+    birdType = BirdType::GARCIA;
+  } else {
+    birdType = BirdType::MILEI;
+  }
   Bird pajaro(birdType, pos_resortera);
   Slingshot resortera(pos_resortera);
 
@@ -158,10 +196,12 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     }
   }
 
+  /*
   sf::Text instructionText(
       "Press 1-3 to change bird: 1=Default, 2=Milei, 3=Fujimori", font, 16);
   instructionText.setPosition(10, 10);
   instructionText.setFillColor(sf::Color::Black);
+  */
 
   // Reloj para medir el tiempo delta (deltaTime)
   sf::Clock deltaClock;
@@ -173,13 +213,24 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
         ventana.close();
 
       if (evento.type == sf::Event::KeyPressed) {
+        /*
         if (evento.key.code == sf::Keyboard::Num2 ||
             evento.key.code == sf::Keyboard::Numpad2) {
           pajaro.setBirdType(BirdType::MILEI);
         } else if (evento.key.code == sf::Keyboard::Num3 ||
                    evento.key.code == sf::Keyboard::Numpad3) {
           pajaro.setBirdType(BirdType::FUJIMORI);
-        } else if (evento.key.code == sf::Keyboard::Escape) {
+        } else if (evento.key.code == sf::Keyboard::Num4 ||
+                   evento.key.code == sf::Keyboard::Numpad4) {
+          pajaro.setBirdType(BirdType::KENJI);
+        } else if (evento.key.code == sf::Keyboard::Num5 ||
+                   evento.key.code == sf::Keyboard::Numpad5) {
+          pajaro.setBirdType(BirdType::MONTESINOS);
+        } else if (evento.key.code == sf::Keyboard::Num6 ||
+                   evento.key.code == sf::Keyboard::Numpad6) {
+          pajaro.setBirdType(BirdType::GARCIA);
+        } else*/
+        if (evento.key.code == sf::Keyboard::Escape) {
           response = render_pause_menu(ventana);
         }
       }

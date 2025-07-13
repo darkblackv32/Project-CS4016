@@ -10,7 +10,7 @@ struct Particle {
   sf::Color color;
   float lifetime;        // Remaining time in seconds
   float maxLifetime;     // Total duration
-  sf::CircleShape shape; // Or sf::RectangleShape, sf::Sprite
+  sf::Sprite shape; // Or sf::RectangleShape, sf::Sprite
 };
 
 // Example ParticleSystem class
@@ -21,7 +21,9 @@ public:
 
   ParticleSystem() {
     // Load texture if needed
-    // if (!particleTexture.loadFromFile("path/to/particle.png")) { ... }
+    if (!particleTexture.loadFromFile("assets/textures/particles/dollar.png")) {
+      // handle error
+    }
   }
 
   void emit(sf::Vector2f position, int count) {
@@ -38,11 +40,12 @@ public:
           (rand() % 100 + 50) / 100.0f; // Lifetime between 0.5 and 1.5 seconds
       p.lifetime = p.maxLifetime;
 
-      p.color =
-          sf::Color(255, rand() % 200 + 50, 0, 255); // Example: reddish-orange
-      p.shape.setRadius(2.0f + (rand() % 3));        // Small random size
-      p.shape.setOrigin(p.shape.getRadius(), p.shape.getRadius());
-      p.shape.setFillColor(p.color);
+      p.color = sf::Color(255, 255, 255, 255);
+      p.shape.setTexture(particleTexture);
+      p.shape.setScale(0.1, 0.1);
+      p.shape.setOrigin(p.shape.getTextureRect().width / 2.0f,
+                        p.shape.getTextureRect().height / 2.0f);
+      p.shape.setColor(p.color);
       p.shape.setPosition(p.position);
 
       particles.push_back(p);
@@ -62,7 +65,7 @@ public:
       sf::Uint8 alpha =
           static_cast<sf::Uint8>(255 * (p.lifetime / p.maxLifetime));
       p.color.a = alpha;
-      p.shape.setFillColor(p.color);
+      p.shape.setColor(p.color);
       p.shape.setPosition(p.position);
 
       if (p.lifetime <= 0) {
