@@ -18,7 +18,7 @@ enum class SFMLShapeType {
   DIAMOND,
   HEXAGON,
   PENTAGON,
-  CUSTOM_POLYGON
+  CUSTOM
 };
 
 struct Level {
@@ -46,18 +46,18 @@ struct Level {
   ~Level();
 
   void setObjects(std::vector<sf::Vector2f> &objectSizes,
-                  std::vector<std::pair<float, float>> &objectPos,
+                  std::vector<std::vector<sf::Vector2f>> &objectPos,
                   std::vector<sf::Color> &objectColors,
                   const std::vector<SFMLShapeType> &shapeTypes = {},
                   const std::vector<std::string> &texturePaths = {});
 
   void setTargets(std::vector<sf::Vector2f> &objectSizes,
-                  std::vector<std::pair<float, float>> &objectPos,
+                  std::vector<std::vector<sf::Vector2f>> &objectPos,
                   std::vector<sf::Color> &objectColors,
                   const std::vector<std::string> &texturePaths);
 
   void setFloor(std::vector<sf::Vector2f> &objectSizes,
-                std::vector<std::pair<float, float>> &objectPos,
+                std::vector<std::vector<sf::Vector2f>> &objectPos,
                 std::vector<sf::Color> &objectColors,
                 const std::vector<SFMLShapeType> &shapeTypes = {});
 
@@ -69,6 +69,8 @@ struct Level {
   b2Body *createBox(float x, float y, float halfWidth, float halfHeight,
                     bool dynamic);
   b2Body *createTriangle(float x, float y, float size, bool dynamic);
+  b2Body *createHexagon(float x, float y, float readius, bool dynamic);
+  b2Body *createCustom(const std::vector<sf::Vector2f> &points, bool dynamic);
 
   b2Body *createCircle(float x, float y, float radius, bool dynamic);
   b2Body *createBird(const sf::Vector2f &pos, float radius);
@@ -78,8 +80,8 @@ struct Level {
                                              const sf::Color &color);
 
   b2Body *createBody(SFMLShapeType type, const sf::Vector2f &size,
-                     const sf::Vector2f &position, const sf::Color &color,
-                     bool dynamic);
+                     const std::vector<sf::Vector2f> &position,
+                     const sf::Color &color, bool dynamic);
 
   void render(sf::RenderWindow &ventana);
   void run(float deltaTime);

@@ -56,8 +56,8 @@ std::unique_ptr<sf::Shape> Level::createSFMLShape(SFMLShapeType type,
 
 // Factory methods para crear diferentes tipos de shapes bodies
 b2Body *Level::createBody(SFMLShapeType type, const sf::Vector2f &size,
-                          const sf::Vector2f &position, const sf::Color &color,
-                          bool dynamic) {
+                          const std::vector<sf::Vector2f> &positions,
+                          const sf::Color &color, bool dynamic) {
 
   // Physics - crear cuerpo estático
   b2Body *temp = nullptr;
@@ -66,30 +66,32 @@ b2Body *Level::createBody(SFMLShapeType type, const sf::Vector2f &size,
 
   switch (type) {
   case SFMLShapeType::CIRCLE: {
-    temp = createCircle(position.x, position.y, size.x, dynamic);
+    temp = createCircle(positions[0].x, positions[0].y, size.x, dynamic);
 
     break;
   }
   case SFMLShapeType::RECTANGLE: {
-    temp = createBox(position.x + size.x / 2.0f, position.y + size.y / 2.0f,
-                     size.x / 2.0f, size.y / 2.0f, dynamic);
+    temp = createBox(positions[0].x + size.x / 2.0f,
+                     positions[0].y + size.y / 2.0f, size.x / 2.0f,
+                     size.y / 2.0f, dynamic);
 
     break;
   }
   case SFMLShapeType::TRIANGLE: {
-    temp = createTriangle(position.x, position.y, size.x, dynamic);
+    temp = createTriangle(positions[0].x, positions[0].y, size.x, dynamic);
     break;
   }
   case SFMLShapeType::HEXAGON: {
-    // TODO
+    temp = createHexagon(positions[0].x, positions[0].y, size.x, dynamic);
     break;
   }
   case SFMLShapeType::PENTAGON: {
     // TODO
     break;
   }
-  case SFMLShapeType::CUSTOM_POLYGON: {
+  case SFMLShapeType::CUSTOM: {
     // TODO
+    temp = createCustom(positions, dynamic);
     break;
   }
   default: {
@@ -105,7 +107,7 @@ b2Body *Level::createBody(SFMLShapeType type, const sf::Vector2f &size,
 }
 
 void Level::setObjects(std::vector<sf::Vector2f> &objectSizes,
-                       std::vector<std::pair<float, float>> &objectPos,
+                       std::vector<std::vector<sf::Vector2f>> &objectPos,
                        std::vector<sf::Color> &objectColors,
                        const std::vector<SFMLShapeType> &shapeTypes,
                        const std::vector<std::string> &texturePaths) {
@@ -118,9 +120,10 @@ void Level::setObjects(std::vector<sf::Vector2f> &objectSizes,
     SFMLShapeType shapeType = shapeTypes[i];
 
     // Physics - crear cuerpo físico apropiado según el tipo
-    sf::Vector2f position = {objectPos[i].first, objectPos[i].second};
-    b2Body *temp =
-        createBody(shapeType, objectSizes[i], position, objectColors[i], true);
+    b2Body *temp = createBody(shapeType, objectSizes[i], objectPos[i],
+                              objectColors[i], true);
+    bodyLife *object_life = new bodyLife(OBJECT_LIFE, OBJECT_DEFENSE);
+    temp->SetUserData(object_life);
 
     if (!temp)
       continue;
@@ -138,6 +141,32 @@ void Level::setObjects(std::vector<sf::Vector2f> &objectSizes,
       objects.push_back(std::move(shape));
     }
   }
+}
+
+b2Body *Level::createHexagon(float x, float y, float radius, bool dynamic) {
+  b2BodyDef bodyDef;
+  if (dynamic) {
+    bodyDef.type = b2_dynamicBody;
+  }
+  bodyDef.position.Set(x / SCALE, y / SCALE);
+  b2Body *hexaBody = m_physics.CreateBody(&bodyDef);
+
+  b2PolygonShape hexagonShape;
+  b2Vec2 vertices[6];
+  float angle = 0.0f;
+  for (int i = 0; i < 6; i++) {
+    vertices[i].Set((radius / SCALE) * std::cos(angle),
+                    (radius / SCALE) * std::sin(angle));
+    angle += 60.0f * b2_pi / 180.0f;
+  }
+  hexagonShape.Set(vertices, 6);
+
+  m_physics.CreatePolygonFixture(hexaBody, &hexagonShape, 1.2f);
+
+  hexaBody->SetSleepingAllowed(true);
+  hexaBody->SetAwake(false);
+
+  return hexaBody;
 }
 
 b2Body *Level::createTriangle(float x, float y, float size, bool dynamic) {
@@ -158,6 +187,63 @@ b2Body *Level::createTriangle(float x, float y, float size, bool dynamic) {
   triangleBody->SetSleepingAllowed(true);
   triangleBody->SetAwake(false);
   return triangleBody;
+}
+
+b2Body *Level::createCustom(const std::vector<sf::Vector2f> &points,
+                            bool dynamic) {
+  // 1. Validate input points
+  if (points.size() < 3) { // A polygon needs at least 3 vertices
+    std::cerr << "Error: Custom polygon needs at least 3 points. Provided: "
+              << points.size() << ".\n";
+    return nullptr;
+  }
+  if (points.size() > b2_maxPolygonVertices) {
+    std::cerr << "Error: Custom polygon has too many vertices ("
+              << points.size() << "). Max allowed is " << b2_maxPolygonVertices
+              << ".\n";
+    return nullptr;
+  }
+
+  b2BodyDef bodyDef;
+  if (dynamic) {
+    bodyDef.type = b2_dynamicBody;
+  }
+
+  // 2. Calculate the centroid of the polygon (in pixel coordinates)
+  sf::Vector2f centroidPixels(0.0f, 0.0f);
+  for (const auto &p : points) {
+    centroidPixels.x += p.x;
+    centroidPixels.y += p.y;
+  }
+  centroidPixels.x /= static_cast<float>(points.size());
+  centroidPixels.y /= static_cast<float>(points.size());
+
+  // Set body position to the calculated centroid (converted to meters)
+  bodyDef.position = pixelsToMeters(centroidPixels);
+
+  b2Body *customBody = m_physics.CreateBody(&bodyDef);
+
+  // 3. Convert SFML points to Box2D vertices (relative to the centroid)
+  b2Vec2 vertices[b2_maxPolygonVertices];
+  for (size_t i = 0; i < points.size(); ++i) {
+    // Convert point from pixels to meters
+    b2Vec2 pointInMeters = pixelsToMeters(points[i]);
+    // Make it relative to the body's origin (which is the centroid)
+    vertices[i] = pointInMeters - bodyDef.position;
+  }
+
+  // 4. Create the polygon shape
+  b2PolygonShape polygonShape;
+  // Box2D automatically computes the convex hull and ensures winding order
+  polygonShape.Set(vertices, static_cast<int32>(points.size()));
+
+  // 5. Create the fixture
+  m_physics.CreatePolygonFixture(customBody, &polygonShape, 1.5f);
+
+  customBody->SetSleepingAllowed(true);
+  customBody->SetAwake(false);
+
+  return customBody;
 }
 
 b2Body *Level::createBox(float x, float y, float halfWidth, float halfHeight,
@@ -214,7 +300,7 @@ b2Body *Level::createBird(const sf::Vector2f &pos, float radius) {
 }
 
 void Level::setTargets(std::vector<sf::Vector2f> &objectSizes,
-                       std::vector<std::pair<float, float>> &objectPos,
+                       std::vector<std::vector<sf::Vector2f>> &objectPos,
                        std::vector<sf::Color> &objectColors,
                        const std::vector<std::string> &texturePaths) {
 
@@ -226,8 +312,8 @@ void Level::setTargets(std::vector<sf::Vector2f> &objectSizes,
     b2Body *temp_target = nullptr;
     b2BodyDef targetDef;
     targetDef.type = b2_dynamicBody;
-    targetDef.position.Set((objectPos[i].first + objectSizes[i].x) / SCALE,
-                           (objectPos[i].second + objectSizes[i].y) / SCALE);
+    targetDef.position.Set((objectPos[i][0].x + objectSizes[i].x) / SCALE,
+                           (objectPos[i][0].y + objectSizes[i].y) / SCALE);
     temp_target = m_physics.CreateBody(&targetDef);
 
     b2CircleShape targetShape;
@@ -267,7 +353,7 @@ void Level::setTargets(std::vector<sf::Vector2f> &objectSizes,
 }
 
 void Level::setFloor(std::vector<sf::Vector2f> &objectSizes,
-                     std::vector<std::pair<float, float>> &objectPos,
+                     std::vector<std::vector<sf::Vector2f>> &objectPos,
                      std::vector<sf::Color> &objectColors,
                      const std::vector<SFMLShapeType> &shapeTypes) {
   // Assuming good behavior and the 4 vectors are equal
@@ -275,10 +361,9 @@ void Level::setFloor(std::vector<sf::Vector2f> &objectSizes,
   for (int i = 0; i < objectSizes.size(); i++) {
     // Determinar tipo de shape (por defecto RECTANGLE para el suelo)
     SFMLShapeType shapeType = shapeTypes[i];
-    sf::Vector2f position(objectPos[i].first, objectPos[i].second);
 
-    b2Body *temp_static =
-        createBody(shapeType, objectSizes[i], position, objectColors[i], false);
+    b2Body *temp_static = createBody(shapeType, objectSizes[i], objectPos[i],
+                                     objectColors[i], false);
 
     if (!temp_static)
       continue;
@@ -414,7 +499,7 @@ void Level::add_efect_bird(b2Body *bird_body) {
 
 Level *return_level(int level, int width, int height) {
   std::vector<sf::Vector2f> objSizes;
-  std::vector<std::pair<float, float>> objPositions;
+  std::vector<std::vector<sf::Vector2f>> objPositions;
   std::vector<sf::Color> objColors;
   std::vector<SFMLShapeType> shapeTypes;
   Level *l = new Level();
@@ -452,27 +537,27 @@ Level *return_level(int level, int width, int height) {
     // with the ball
     // Test more later
     objPositions = {
-        std::make_pair(START_LEVEL_X, START_LEVEL_Y - 2 * BLOCK - OFFSET_ABOVE),
-        std::make_pair(START_LEVEL_X, START_LEVEL_Y - OFFSET_ABOVE),
-        std::make_pair(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y - OFFSET_ABOVE),
-        std::make_pair(START_LEVEL_X + 11 * BLOCK,
-                       START_LEVEL_Y - 2 * BLOCK - OFFSET_ABOVE),
-        std::make_pair(START_LEVEL_X + 3 * BLOCK,
-                       START_LEVEL_Y - 7 * BLOCK - OFFSET_ABOVE),
-        std::make_pair(START_LEVEL_X + 8 * BLOCK,
-                       START_LEVEL_Y - 7 * BLOCK - OFFSET_ABOVE),
-        std::make_pair(START_LEVEL_X + 3 * BLOCK,
-                       START_LEVEL_Y - 8 * BLOCK - OFFSET_ABOVE),
-        std::make_pair(START_LEVEL_X + 4 * BLOCK,
-                       START_LEVEL_Y - 15 * BLOCK - OFFSET_ABOVE),
-        std::make_pair(START_LEVEL_X + 7 * BLOCK,
-                       START_LEVEL_Y - 15 * BLOCK - OFFSET_ABOVE),
-        std::make_pair(START_LEVEL_X + 4 * BLOCK,
-                       START_LEVEL_Y - 16 * BLOCK - OFFSET_ABOVE),
+        {sf::Vector2f(START_LEVEL_X, START_LEVEL_Y - 2 * BLOCK - OFFSET_ABOVE)},
+        {sf::Vector2f(START_LEVEL_X, START_LEVEL_Y - OFFSET_ABOVE)},
+        {sf::Vector2f(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y - OFFSET_ABOVE)},
+        {sf::Vector2f(START_LEVEL_X + 11 * BLOCK,
+                      START_LEVEL_Y - 2 * BLOCK - OFFSET_ABOVE)},
+        {sf::Vector2f(START_LEVEL_X + 3 * BLOCK,
+                      START_LEVEL_Y - 7 * BLOCK - OFFSET_ABOVE)},
+        {sf::Vector2f(START_LEVEL_X + 8 * BLOCK,
+                      START_LEVEL_Y - 7 * BLOCK - OFFSET_ABOVE)},
+        {sf::Vector2f(START_LEVEL_X + 3 * BLOCK,
+                      START_LEVEL_Y - 8 * BLOCK - OFFSET_ABOVE)},
+        {sf::Vector2f(START_LEVEL_X + 4 * BLOCK,
+                      START_LEVEL_Y - 15 * BLOCK - OFFSET_ABOVE)},
+        {sf::Vector2f(START_LEVEL_X + 7 * BLOCK,
+                      START_LEVEL_Y - 15 * BLOCK - OFFSET_ABOVE)},
+        {sf::Vector2f(START_LEVEL_X + 4 * BLOCK,
+                      START_LEVEL_Y - 16 * BLOCK - OFFSET_ABOVE)},
     };
 
     objColors = {
-        {150, 50, 200},      {150, 50, 200},      {150, 50, 200},{150, 50, 200},
+        {150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
         {150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {200, 100, 50},
         {200, 100, 50}, {150, 50, 200},
     };
@@ -492,7 +577,7 @@ Level *return_level(int level, int width, int height) {
                   objTexturePaths);
 
     objSizes = {sf::Vector2f(bound_x, BLOCK * 2)};
-    objPositions = {std::make_pair(0.0f, bound_y - 2 * BLOCK)};
+    objPositions = {{sf::Vector2f(0.0f, bound_y - 2 * BLOCK)}};
     objColors = {{120, 110, 100}};
     shapeTypes = {SFMLShapeType::RECTANGLE};
 
@@ -501,7 +586,7 @@ Level *return_level(int level, int width, int height) {
     // We use the same vector for simplicity, It holds the radio
     objSizes = {sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f)};
     objPositions = {
-        std::make_pair(START_LEVEL_X + 5.5 * BLOCK, START_LEVEL_Y - BLOCK)};
+        {sf::Vector2f(START_LEVEL_X + 5.5 * BLOCK, START_LEVEL_Y - BLOCK)}};
     objColors = {{9, 186, 45}};
     texturePaths.push_back("./assets/textures/milei/kirchner.png");
 
@@ -553,60 +638,61 @@ Level *return_level(int level, int width, int height) {
         sf::Vector2f(BLOCK, BLOCK),
 
         // Center
-        sf::Vector2f(2 * BLOCK, 2 * BLOCK),
+        sf::Vector2f(3 * BLOCK, 2 * BLOCK),
         sf::Vector2f(6 * BLOCK, BLOCK),
     };
 
     objPositions = {
         // pilars
         // left side
-        std::make_pair(START_LEVEL_X, START_LEVEL_Y),
-        std::make_pair(START_LEVEL_X, START_LEVEL_Y - 5 * BLOCK),
-        std::make_pair(START_LEVEL_X + 3 * BLOCK, START_LEVEL_Y),
-        std::make_pair(START_LEVEL_X + 3 * BLOCK, START_LEVEL_Y - 5 * BLOCK),
-        std::make_pair(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y),
-        std::make_pair(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y - 5 * BLOCK),
-        std::make_pair(START_LEVEL_X + 9 * BLOCK, START_LEVEL_Y),
-        std::make_pair(START_LEVEL_X + 9 * BLOCK, START_LEVEL_Y - 5 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X, START_LEVEL_Y)},
+        {sf::Vector2f(START_LEVEL_X, START_LEVEL_Y - 5 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 3 * BLOCK, START_LEVEL_Y)},
+        {sf::Vector2f(START_LEVEL_X + 3 * BLOCK, START_LEVEL_Y - 5 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y)},
+        {sf::Vector2f(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y - 5 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 9 * BLOCK, START_LEVEL_Y)},
+        {sf::Vector2f(START_LEVEL_X + 9 * BLOCK, START_LEVEL_Y - 5 * BLOCK)},
 
         // right side
-        std::make_pair(START_LEVEL_X + 14 * BLOCK, START_LEVEL_Y),
-        std::make_pair(START_LEVEL_X + 14 * BLOCK, START_LEVEL_Y - 5 * BLOCK),
-        std::make_pair(START_LEVEL_X + 17 * BLOCK, START_LEVEL_Y),
-        std::make_pair(START_LEVEL_X + 17 * BLOCK, START_LEVEL_Y - 5 * BLOCK),
-        std::make_pair(START_LEVEL_X + 20 * BLOCK, START_LEVEL_Y),
-        std::make_pair(START_LEVEL_X + 20 * BLOCK, START_LEVEL_Y - 5 * BLOCK),
-        std::make_pair(START_LEVEL_X + 23 * BLOCK, START_LEVEL_Y),
-        std::make_pair(START_LEVEL_X + 23 * BLOCK, START_LEVEL_Y - 5 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 14 * BLOCK, START_LEVEL_Y)},
+        {sf::Vector2f(START_LEVEL_X + 14 * BLOCK, START_LEVEL_Y - 5 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 17 * BLOCK, START_LEVEL_Y)},
+        {sf::Vector2f(START_LEVEL_X + 17 * BLOCK, START_LEVEL_Y - 5 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 20 * BLOCK, START_LEVEL_Y)},
+        {sf::Vector2f(START_LEVEL_X + 20 * BLOCK, START_LEVEL_Y - 5 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 23 * BLOCK, START_LEVEL_Y)},
+        {sf::Vector2f(START_LEVEL_X + 23 * BLOCK, START_LEVEL_Y - 5 * BLOCK)},
 
         // long blocks in between pilars
-        std::make_pair(START_LEVEL_X, START_LEVEL_Y - BLOCK),
-        std::make_pair(START_LEVEL_X, START_LEVEL_Y - 6 * BLOCK),
-        std::make_pair(START_LEVEL_X + 14 * BLOCK, START_LEVEL_Y - BLOCK),
-        std::make_pair(START_LEVEL_X + 14 * BLOCK, START_LEVEL_Y - 6 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X, START_LEVEL_Y - BLOCK)},
+        {sf::Vector2f(START_LEVEL_X, START_LEVEL_Y - 6 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 14 * BLOCK, START_LEVEL_Y - BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 14 * BLOCK, START_LEVEL_Y - 6 * BLOCK)},
 
         // Small blocks in between pilars
         // left
-        std::make_pair(START_LEVEL_X + 1.5 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
-        std::make_pair(START_LEVEL_X + 4.5 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
-        std::make_pair(START_LEVEL_X + 7.5 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 2 * BLOCK, START_LEVEL_Y - 7 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 5 * BLOCK, START_LEVEL_Y - 7 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 8 * BLOCK, START_LEVEL_Y - 7 * BLOCK)},
         // right
-        std::make_pair(START_LEVEL_X + 15.5 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
-        std::make_pair(START_LEVEL_X + 18.5 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
-        std::make_pair(START_LEVEL_X + 21.5 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 16 * BLOCK, START_LEVEL_Y - 7 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 19 * BLOCK, START_LEVEL_Y - 7 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 22 * BLOCK, START_LEVEL_Y - 7 * BLOCK)},
 
         // Center
-        std::make_pair(START_LEVEL_X + 11 * BLOCK, START_LEVEL_Y - 9 * BLOCK),
-        std::make_pair(START_LEVEL_X + 9 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 12 * BLOCK, START_LEVEL_Y - 10 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 9 * BLOCK, START_LEVEL_Y - 7 * BLOCK)},
     };
 
-    objColors = {
-        {150, 50, 200},{150, 50, 200},{150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
-        {150, 50, 200},{150, 50, 200},{150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
-        {150, 50, 200},{150, 50, 200},{150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
-        {150, 50, 200},{150, 50, 200},{150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
-        {150, 50, 200},{150, 50, 200},{150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200}
-    };
+    objColors = {{150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
+                 {150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
+                 {150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
+                 {150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
+                 {150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
+                 {150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
+                 {150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
+                 {150, 50, 200}, {150, 50, 200}};
 
     shapeTypes = {SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
                   SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
@@ -618,10 +704,10 @@ Level *return_level(int level, int width, int height) {
                   SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
                   SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
                   SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
-                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
-                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
-                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
-                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE};
+                  SFMLShapeType::TRIANGLE,  SFMLShapeType::TRIANGLE,
+                  SFMLShapeType::TRIANGLE,  SFMLShapeType::TRIANGLE,
+                  SFMLShapeType::TRIANGLE,  SFMLShapeType::TRIANGLE,
+                  SFMLShapeType::TRIANGLE,  SFMLShapeType::RECTANGLE};
 
     objTexturePaths.clear();
     for (int i = 0; i < objSizes.size(); ++i) {
@@ -631,7 +717,7 @@ Level *return_level(int level, int width, int height) {
                   objTexturePaths);
 
     objSizes = {sf::Vector2f(bound_x, BLOCK * 2)};
-    objPositions = {std::make_pair(0.0f, bound_y - 2 * BLOCK)};
+    objPositions = {{sf::Vector2f(0.0f, bound_y - 2 * BLOCK)}};
     objColors = {{120, 110, 100}};
     shapeTypes = {SFMLShapeType::RECTANGLE};
 
@@ -647,13 +733,13 @@ Level *return_level(int level, int width, int height) {
                 sf::Vector2f(2 * BLOCK / 2.0f, 2 * BLOCK / 2.0f)};
     objPositions = {
         // inside
-        std::make_pair(START_LEVEL_X + 1.5 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
-        std::make_pair(START_LEVEL_X + 4.5 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
-        std::make_pair(START_LEVEL_X + 7.5 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
-        std::make_pair(START_LEVEL_X + 15.5 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
-        std::make_pair(START_LEVEL_X + 18.5 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
-        std::make_pair(START_LEVEL_X + 21.5 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
-        std::make_pair(START_LEVEL_X + 11 * BLOCK, START_LEVEL_Y + 2 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 1.5 * BLOCK, START_LEVEL_Y - 2 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 4.5 * BLOCK, START_LEVEL_Y - 2 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 7.5 * BLOCK, START_LEVEL_Y - 2 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 15.5 * BLOCK, START_LEVEL_Y - 2 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 18.5 * BLOCK, START_LEVEL_Y - 2 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 21.5 * BLOCK, START_LEVEL_Y - 2 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 11 * BLOCK, START_LEVEL_Y + 2 * BLOCK)},
     };
     objColors = {{9, 186, 45}, {9, 186, 45}, {9, 186, 45}, {9, 186, 45},
                  {9, 186, 45}, {9, 186, 45}, {9, 186, 45}};
@@ -714,55 +800,86 @@ Level *return_level(int level, int width, int height) {
         sf::Vector2f(BLOCK, BLOCK),
         sf::Vector2f(BLOCK, BLOCK),
         sf::Vector2f(BLOCK, BLOCK),
+
+        // Fourth building
+        // bottom
+        sf::Vector2f(4 * BLOCK, BLOCK),
+        // pilars
+        sf::Vector2f(BLOCK, 2 * BLOCK),
+        sf::Vector2f(BLOCK, 2 * BLOCK),
+        // top big
+        sf::Vector2f(4 * BLOCK, BLOCK),
+        // top  small
+        sf::Vector2f(BLOCK, BLOCK),
+        sf::Vector2f(BLOCK, BLOCK),
+        sf::Vector2f(BLOCK, BLOCK),
     };
 
     objPositions = {
         // first building
         // bottom
-        std::make_pair(START_LEVEL_X, START_LEVEL_Y - BLOCK),
+        {sf::Vector2f(START_LEVEL_X, START_LEVEL_Y - BLOCK)},
         // pillars
-        std::make_pair(START_LEVEL_X, START_LEVEL_Y - 3 * BLOCK),
-        std::make_pair(START_LEVEL_X + 3 * BLOCK, START_LEVEL_Y - 3 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X, START_LEVEL_Y - 3 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 3 * BLOCK, START_LEVEL_Y - 3 * BLOCK)},
         // top big
-        std::make_pair(START_LEVEL_X, START_LEVEL_Y - 4 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X, START_LEVEL_Y - 4 * BLOCK)},
         // top small
-        std::make_pair(START_LEVEL_X, START_LEVEL_Y - 5 * BLOCK),
-        std::make_pair(START_LEVEL_X + 1.5 * BLOCK, START_LEVEL_Y - 5 * BLOCK),
-        std::make_pair(START_LEVEL_X + 3 * BLOCK, START_LEVEL_Y - 5 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X, START_LEVEL_Y - 5 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 1.5 * BLOCK, START_LEVEL_Y - 5 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 3 * BLOCK, START_LEVEL_Y - 5 * BLOCK)},
 
         // second building
         // bottom
-        std::make_pair(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y - 3 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y - 6 * BLOCK)},
         // pillars
-        std::make_pair(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y - 5 * BLOCK),
-        std::make_pair(START_LEVEL_X + 9 * BLOCK, START_LEVEL_Y - 5 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y - 8 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 9 * BLOCK, START_LEVEL_Y - 8 * BLOCK)},
         // top big
-        std::make_pair(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y - 6 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y - 9 * BLOCK)},
         // top small
-        std::make_pair(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
-        std::make_pair(START_LEVEL_X + 7.5 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
-        std::make_pair(START_LEVEL_X + 9 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y - 10 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 7.5 * BLOCK, START_LEVEL_Y - 10 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 9 * BLOCK, START_LEVEL_Y - 10 * BLOCK)},
 
         // third building
         // bottom
-        std::make_pair(START_LEVEL_X + 12 * BLOCK, START_LEVEL_Y - 5 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 11 * BLOCK, START_LEVEL_Y - 11 * BLOCK)},
         // pillars
-        std::make_pair(START_LEVEL_X + 12 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
-        std::make_pair(START_LEVEL_X + 15 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 11 * BLOCK, START_LEVEL_Y - 13 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 14 * BLOCK, START_LEVEL_Y - 13 * BLOCK)},
         // top big
-        std::make_pair(START_LEVEL_X + 12 * BLOCK, START_LEVEL_Y - 8 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 11 * BLOCK, START_LEVEL_Y - 14 * BLOCK)},
         // top small
-        std::make_pair(START_LEVEL_X + 12 * BLOCK, START_LEVEL_Y - 9 * BLOCK),
-        std::make_pair(START_LEVEL_X + 13.5 * BLOCK, START_LEVEL_Y - 9 * BLOCK),
-        std::make_pair(START_LEVEL_X + 15 * BLOCK, START_LEVEL_Y - 9 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 11 * BLOCK, START_LEVEL_Y - 15 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 12.5 * BLOCK,
+                      START_LEVEL_Y - 15 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 14 * BLOCK, START_LEVEL_Y - 15 * BLOCK)},
+
+        // fourth building
+        // bottom
+        {sf::Vector2f(START_LEVEL_X + 16 * BLOCK, START_LEVEL_Y - 16 * BLOCK)},
+        // pillars
+        {sf::Vector2f(START_LEVEL_X + 16 * BLOCK, START_LEVEL_Y - 18 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 19 * BLOCK, START_LEVEL_Y - 18 * BLOCK)},
+        // top big
+        {sf::Vector2f(START_LEVEL_X + 16 * BLOCK, START_LEVEL_Y - 19 * BLOCK)},
+        // top small
+        {sf::Vector2f(START_LEVEL_X + 16 * BLOCK, START_LEVEL_Y - 20 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 17.5 * BLOCK,
+                      START_LEVEL_Y - 20 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 19 * BLOCK, START_LEVEL_Y - 20 * BLOCK)},
     };
 
     objColors = {
-
-        {150, 50, 200},{150, 50, 200},{150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
-        {150, 50, 200},{150, 50, 200},{150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
-        {150, 50, 200},{150, 50, 200},{150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
-        {150, 50, 200},{150, 50, 200},{150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
+        {150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
+        {150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
+        {150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
+        {150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
+        {150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
+        {150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
+        {150, 50, 200}, {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
+        {150, 50, 200}, {150, 50, 200}, {150, 50, 200},
     };
 
     shapeTypes = {SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
@@ -778,7 +895,11 @@ Level *return_level(int level, int width, int height) {
                   SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
                   SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
                   SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
-                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE};
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE};
 
     objTexturePaths.clear();
     for (int i = 0; i < objSizes.size(); ++i) {
@@ -789,36 +910,59 @@ Level *return_level(int level, int width, int height) {
 
     objSizes = {
         sf::Vector2f(bound_x, BLOCK * 2),
-        sf::Vector2f(BLOCK * 5, BLOCK * 2),
-        sf::Vector2f(BLOCK * 7, BLOCK * 4),
+        sf::Vector2f(BLOCK * 5, BLOCK * 5),
+        sf::Vector2f(BLOCK * 5, BLOCK * 10),
+        sf::Vector2f(BLOCK * 5, BLOCK * 15),
+        sf::Vector2f(BLOCK * 5, BLOCK * 15),
     };
     objPositions = {
-        std::make_pair(0.0f, bound_y - 2 * BLOCK),
-        std::make_pair(START_LEVEL_X + 5.5 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
-        std::make_pair(START_LEVEL_X + 10.5 * BLOCK,
-                       START_LEVEL_Y - 4 * BLOCK)};
-    objColors = {{120, 110, 100}, {120, 110, 100}, {120, 110, 100}};
+        {sf::Vector2f(0.0f, bound_y - 2 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 5.5 * BLOCK, START_LEVEL_Y - 5 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 10.5 * BLOCK,
+                      START_LEVEL_Y - 10 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 15.5 * BLOCK,
+                      START_LEVEL_Y - 15 * BLOCK)},
+        {
+            sf::Vector2f(START_LEVEL_X + 20.5 * BLOCK,
+                         START_LEVEL_Y - 15 * BLOCK),
+            sf::Vector2f(bound_x, 0),
+            sf::Vector2f(bound_x, START_LEVEL_Y),
+            sf::Vector2f(START_LEVEL_X + 20.5 * BLOCK, START_LEVEL_Y),
+        },
+    };
+    objColors = {{120, 110, 100},
+                 {120, 110, 100},
+                 {120, 110, 100},
+                 {120, 110, 100},
+                 {120, 110, 100}};
 
     shapeTypes = {SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
-                  SFMLShapeType::RECTANGLE};
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::CUSTOM};
 
     l->setFloor(objSizes, objPositions, objColors, shapeTypes);
 
-    objSizes = {// inside
-                sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
-                sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
-                sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f)};
+    objSizes = {
+        // inside
+        sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
+        sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
+        sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
+        sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
+    };
     objPositions = {
         // inside
-        std::make_pair(START_LEVEL_X + 1.5 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
-        std::make_pair(START_LEVEL_X + 7.5 * BLOCK, START_LEVEL_Y - 4 * BLOCK),
-        std::make_pair(START_LEVEL_X + 13.5 * BLOCK, START_LEVEL_Y - 6 * BLOCK),
-    };
-    objColors = {{9, 186, 45}, {9, 186, 45}, {9, 186, 45}};
+        {sf::Vector2f(START_LEVEL_X + 1.5 * BLOCK, START_LEVEL_Y - 2 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 7.5 * BLOCK, START_LEVEL_Y - 7 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 12.5 * BLOCK,
+                      START_LEVEL_Y - 12 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 17.5 * BLOCK,
+                      START_LEVEL_Y - 17 * BLOCK)}};
+    objColors = {{9, 186, 45}, {9, 186, 45}, {9, 186, 45}, {9, 186, 45}};
 
     texturePaths.clear();
     texturePaths.push_back("./assets/textures/milei/fernandez.png");
     texturePaths.push_back("./assets/textures/milei/kirchner.png");
+    texturePaths.push_back("./assets/textures/milei/massa.png");
     texturePaths.push_back("./assets/textures/milei/massa.png");
     l->setTargets(objSizes, objPositions, objColors, texturePaths);
 
@@ -836,11 +980,9 @@ Level *return_level(int level, int width, int height) {
     objSizes = {
         // bottom
         // base
-        sf::Vector2f(3 * BLOCK, BLOCK),
         sf::Vector2f(2.5 * BLOCK, BLOCK),
         sf::Vector2f(4 * BLOCK, BLOCK),
         sf::Vector2f(2.5 * BLOCK, BLOCK),
-        sf::Vector2f(3 * BLOCK, BLOCK),
         // pilars
         sf::Vector2f(BLOCK, BLOCK * 6),
         sf::Vector2f(BLOCK, BLOCK * 6),
@@ -871,54 +1013,67 @@ Level *return_level(int level, int width, int height) {
         sf::Vector2f(6 * BLOCK, BLOCK),
         sf::Vector2f(7 * BLOCK, BLOCK),
         sf::Vector2f(6 * BLOCK, BLOCK),
+        // Hexagons
+        sf::Vector2f(2 * BLOCK, BLOCK),
+        sf::Vector2f(2 * BLOCK, BLOCK),
+        sf::Vector2f(2 * BLOCK, BLOCK),
     };
 
     objPositions = {
         // bottom
         // base
-        std::make_pair(START_LEVEL_X + BLOCK, START_LEVEL_Y - BLOCK),
-        std::make_pair(START_LEVEL_X + 5 * BLOCK, START_LEVEL_Y - BLOCK),
-        std::make_pair(START_LEVEL_X + 8.5 * BLOCK, START_LEVEL_Y - BLOCK),
-        std::make_pair(START_LEVEL_X + 13.5 * BLOCK, START_LEVEL_Y - BLOCK),
-        std::make_pair(START_LEVEL_X + 17 * BLOCK, START_LEVEL_Y - BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 5 * BLOCK, START_LEVEL_Y - BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 8.5 * BLOCK, START_LEVEL_Y - BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 13.5 * BLOCK, START_LEVEL_Y - BLOCK)},
         // pillars
-        std::make_pair(START_LEVEL_X + 4 * BLOCK, START_LEVEL_Y - 6 * BLOCK),
-        std::make_pair(START_LEVEL_X + 7.5 * BLOCK, START_LEVEL_Y - 6 * BLOCK),
-        std::make_pair(START_LEVEL_X + 12.5 * BLOCK, START_LEVEL_Y - 6 * BLOCK),
-        std::make_pair(START_LEVEL_X + 16 * BLOCK, START_LEVEL_Y - 6 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 4 * BLOCK, START_LEVEL_Y - 6 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 7.5 * BLOCK, START_LEVEL_Y - 6 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 12.5 * BLOCK, START_LEVEL_Y - 6 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 16 * BLOCK, START_LEVEL_Y - 6 * BLOCK)},
 
         // middle
         // lower
-        std::make_pair(START_LEVEL_X + 1 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
-        std::make_pair(START_LEVEL_X + 8 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
-        std::make_pair(START_LEVEL_X + 13 * BLOCK, START_LEVEL_Y - 7 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 1 * BLOCK, START_LEVEL_Y - 7 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 8 * BLOCK, START_LEVEL_Y - 7 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 13 * BLOCK, START_LEVEL_Y - 7 * BLOCK)},
         // upper
-        std::make_pair(START_LEVEL_X + 1 * BLOCK, START_LEVEL_Y - 8 * BLOCK),
-        std::make_pair(START_LEVEL_X + 10.5 * BLOCK, START_LEVEL_Y - 8 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 1 * BLOCK, START_LEVEL_Y - 8 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 10.5 * BLOCK, START_LEVEL_Y - 8 * BLOCK)},
 
         // top
         // pillars
-        std::make_pair(START_LEVEL_X + 2 * BLOCK, START_LEVEL_Y - 10 * BLOCK),
-        std::make_pair(START_LEVEL_X + 4 * BLOCK, START_LEVEL_Y - 10 * BLOCK),
-        std::make_pair(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y - 10 * BLOCK),
-        std::make_pair(START_LEVEL_X + 8 * BLOCK, START_LEVEL_Y - 10 * BLOCK),
-        std::make_pair(START_LEVEL_X + 10 * BLOCK, START_LEVEL_Y - 10 * BLOCK),
-        std::make_pair(START_LEVEL_X + 12 * BLOCK, START_LEVEL_Y - 10 * BLOCK),
-        std::make_pair(START_LEVEL_X + 14 * BLOCK, START_LEVEL_Y - 10 * BLOCK),
-        std::make_pair(START_LEVEL_X + 16 * BLOCK, START_LEVEL_Y - 10 * BLOCK),
-        std::make_pair(START_LEVEL_X + 18 * BLOCK, START_LEVEL_Y - 10 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 2 * BLOCK, START_LEVEL_Y - 10 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 4 * BLOCK, START_LEVEL_Y - 10 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y - 10 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 8 * BLOCK, START_LEVEL_Y - 10 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 10 * BLOCK, START_LEVEL_Y - 10 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 12 * BLOCK, START_LEVEL_Y - 10 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 14 * BLOCK, START_LEVEL_Y - 10 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 16 * BLOCK, START_LEVEL_Y - 10 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 18 * BLOCK, START_LEVEL_Y - 10 * BLOCK)},
         // sideways
-        std::make_pair(START_LEVEL_X + 1 * BLOCK, START_LEVEL_Y - 11 * BLOCK),
-        std::make_pair(START_LEVEL_X + 7 * BLOCK, START_LEVEL_Y - 11 * BLOCK),
-        std::make_pair(START_LEVEL_X + 14 * BLOCK, START_LEVEL_Y - 11 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 1 * BLOCK, START_LEVEL_Y - 11 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 7 * BLOCK, START_LEVEL_Y - 11 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 14 * BLOCK, START_LEVEL_Y - 11 * BLOCK)},
+        // hexagons
+        // Calculate positions precisely is a little anoying
+        {sf::Vector2f(START_LEVEL_X + 4 * BLOCK,
+                      START_LEVEL_Y - 13 * BLOCK + 7)},
+        {sf::Vector2f(START_LEVEL_X + 10.5 * BLOCK,
+                      START_LEVEL_Y - 13 * BLOCK + 7)},
+        {sf::Vector2f(START_LEVEL_X + 17 * BLOCK,
+                      START_LEVEL_Y - 13 * BLOCK + 7)},
     };
 
     objColors = {
-        {230, 230, 230},{230, 230, 230},{230, 230, 230},{230, 230, 230},{230, 230, 230},{230, 230, 230},
-        {230, 230, 230},{230, 230, 230},{230, 230, 230},{230, 230, 230},{230, 230, 230},{230, 230, 230},
-        {230, 230, 230},{230, 230, 230},{230, 230, 230},{230, 230, 230},{230, 230, 230},{230, 230, 230},
-        {230, 230, 230},{230, 230, 230},{230, 230, 230},{230, 230, 230},{230, 230, 230},{230, 230, 230},
-        {230, 230, 230},{230, 230, 230},{230, 230, 230},{230, 230, 230},{230, 230, 230},{230, 230, 230},
+        {230, 230, 230}, {230, 230, 230}, {230, 230, 230}, {230, 230, 230},
+        {230, 230, 230}, {230, 230, 230}, {230, 230, 230}, {230, 230, 230},
+        {230, 230, 230}, {230, 230, 230}, {230, 230, 230}, {230, 230, 230},
+        {230, 230, 230}, {230, 230, 230}, {230, 230, 230}, {230, 230, 230},
+        {230, 230, 230}, {230, 230, 230}, {230, 230, 230}, {230, 230, 230},
+        {230, 230, 230}, {230, 230, 230}, {230, 230, 230}, {230, 230, 230},
+        {230, 230, 230}, {230, 230, 230}, {230, 230, 230}, {230, 230, 230},
+        {230, 230, 230}, {230, 230, 230}, {230, 230, 230},
     };
 
     shapeTypes = {
@@ -934,35 +1089,45 @@ Level *return_level(int level, int width, int height) {
         SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
         SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
         SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
-        SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
-        SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+        SFMLShapeType::HEXAGON,   SFMLShapeType::HEXAGON,
+        SFMLShapeType::HEXAGON,
     };
 
-
-      objTexturePaths.clear();
+    objTexturePaths.clear();
     for (int i = 0; i < objSizes.size(); ++i) {
       objTexturePaths.push_back("./assets/textures/material/stone.png");
     }
 
-    l->setObjects(objSizes, objPositions, objColors, shapeTypes, objTexturePaths);
+    l->setObjects(objSizes, objPositions, objColors, shapeTypes,
+                  objTexturePaths);
 
     objSizes = {
         sf::Vector2f(bound_x, BLOCK * 2),
         // sides
         sf::Vector2f(BLOCK, BLOCK * 12),
         sf::Vector2f(BLOCK, BLOCK * 12),
-        // square
+        // Inside hole
         sf::Vector2f(BLOCK, BLOCK),
         sf::Vector2f(BLOCK, BLOCK),
     };
     objPositions = {
-        std::make_pair(0.0f, bound_y - 2 * BLOCK),
+        {sf::Vector2f(0.0f, bound_y - 2 * BLOCK)},
         // sides
-        std::make_pair(START_LEVEL_X, START_LEVEL_Y - 12 * BLOCK),
-        std::make_pair(START_LEVEL_X + 20 * BLOCK, START_LEVEL_Y - 12 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X, START_LEVEL_Y - 12 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 20 * BLOCK, START_LEVEL_Y - 12 * BLOCK)},
         // squares
-        std::make_pair(START_LEVEL_X + 1 * BLOCK, START_LEVEL_Y - 6 * BLOCK),
-        std::make_pair(START_LEVEL_X + 19 * BLOCK, START_LEVEL_Y - 6 * BLOCK),
+        {
+            sf::Vector2f(START_LEVEL_X + 1 * BLOCK, START_LEVEL_Y - 6 * BLOCK),
+            sf::Vector2f(START_LEVEL_X + 4 * BLOCK, START_LEVEL_Y - BLOCK),
+            sf::Vector2f(START_LEVEL_X + 4 * BLOCK, START_LEVEL_Y),
+            sf::Vector2f(START_LEVEL_X + 1 * BLOCK, START_LEVEL_Y),
+        },
+        {
+            sf::Vector2f(START_LEVEL_X + 20 * BLOCK, START_LEVEL_Y - 6 * BLOCK),
+            sf::Vector2f(START_LEVEL_X + 17 * BLOCK, START_LEVEL_Y - BLOCK),
+            sf::Vector2f(START_LEVEL_X + 20 * BLOCK, START_LEVEL_Y),
+            sf::Vector2f(START_LEVEL_X + 17 * BLOCK, START_LEVEL_Y),
+        },
     };
     objColors = {{120, 110, 100},
                  {120, 110, 100},
@@ -971,8 +1136,8 @@ Level *return_level(int level, int width, int height) {
                  {120, 110, 100}};
 
     shapeTypes = {SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
-                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
-                  SFMLShapeType::RECTANGLE};
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::CUSTOM,
+                  SFMLShapeType::CUSTOM};
 
     l->setFloor(objSizes, objPositions, objColors, shapeTypes);
 
@@ -982,9 +1147,9 @@ Level *return_level(int level, int width, int height) {
         sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
     };
     objPositions = {
-        std::make_pair(START_LEVEL_X + 2 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
-        std::make_pair(START_LEVEL_X + 10 * BLOCK, START_LEVEL_Y - 3 * BLOCK),
-        std::make_pair(START_LEVEL_X + 18 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 6 * BLOCK, START_LEVEL_Y - 2 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 10 * BLOCK, START_LEVEL_Y - 3 * BLOCK)},
+        {sf::Vector2f(START_LEVEL_X + 14 * BLOCK, START_LEVEL_Y - 2 * BLOCK)},
     };
     objColors = {{9, 186, 45}, {9, 186, 45}, {9, 186, 45}};
 
@@ -1010,7 +1175,7 @@ Level *return_level(int level, int width, int height) {
 
     objSizes = {sf::Vector2f(BLOCK, BLOCK)};
 
-    objPositions = {std::make_pair(START_LEVEL_X, START_LEVEL_Y - BLOCK)};
+    objPositions = {{sf::Vector2f(START_LEVEL_X, START_LEVEL_Y - BLOCK)}};
 
     objColors = {{0, 0, 0}};
 
@@ -1025,16 +1190,19 @@ Level *return_level(int level, int width, int height) {
 
     objSizes = {
         sf::Vector2f(bound_x, BLOCK * 2),
-        sf::Vector2f(BLOCK, BLOCK * 12),
+        sf::Vector2f(BLOCK, BLOCK),
     };
     objPositions = {
-        std::make_pair(0.0f, bound_y - 2 * BLOCK),
+        {sf::Vector2f(0.0f, bound_y - 2 * BLOCK)},
         // sides
-        std::make_pair(START_LEVEL_X + 20 * BLOCK, START_LEVEL_Y - 12 * BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 8 * BLOCK, START_LEVEL_Y - 12 * BLOCK),
+         sf::Vector2f(START_LEVEL_X + 14 * BLOCK, START_LEVEL_Y - 10 * BLOCK),
+         sf::Vector2f(START_LEVEL_X + 8 * BLOCK, START_LEVEL_Y),
+         sf::Vector2f(START_LEVEL_X + 15 * BLOCK, START_LEVEL_Y)},
     };
     objColors = {{120, 110, 100}, {120, 110, 100}};
 
-    shapeTypes = {SFMLShapeType::RECTANGLE, SFMLShapeType::TRIANGLE};
+    shapeTypes = {SFMLShapeType::RECTANGLE, SFMLShapeType::CUSTOM};
 
     l->setFloor(objSizes, objPositions, objColors, shapeTypes);
 
@@ -1042,7 +1210,7 @@ Level *return_level(int level, int width, int height) {
         sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
     };
     objPositions = {
-        std::make_pair(START_LEVEL_X + 2 * BLOCK, START_LEVEL_Y - BLOCK),
+        {sf::Vector2f(START_LEVEL_X + 2 * BLOCK, START_LEVEL_Y - BLOCK)},
     };
     objColors = {{9, 186, 45}};
 
