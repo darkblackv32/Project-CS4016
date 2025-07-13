@@ -23,39 +23,55 @@ void Bird::loadTextures() {
   idleTexture = nullptr;
   flyingTexture = nullptr;
 
+  std::string idlePath, flyingPath;
+
   switch (type) {
   case BirdType::MILEI:
-  case BirdType::FUJIMORI: {
-    auto &entry = BirdTextureCache::cache[type];
-    const std::string basePath = (type == BirdType::MILEI)
-                                     ? "assets/textures/milei/"
-                                     : "assets/textures/fujimori/";
-
-    if (!entry.first) {
-      auto idle = std::make_unique<sf::Texture>();
-      if (!idle->loadFromFile(basePath + "1.png")) {
-        std::cerr << "Error loading idle texture for bird type: "
-                  << static_cast<int>(type) << "\n";
-        break;
-      }
-      entry.first = std::move(idle);
-    }
-
-    if (!entry.second) {
-      auto flying = std::make_unique<sf::Texture>();
-      if (!flying->loadFromFile(basePath + "2.png")) {
-        std::cerr << "Error loading flying texture for bird type: "
-                  << static_cast<int>(type) << "\n";
-        break;
-      }
-      entry.second = std::move(flying);
-    }
-
-    idleTexture = entry.first.get();
-    flyingTexture = entry.second.get();
+    idlePath = "assets/textures/milei/1.png";
+    flyingPath = "assets/textures/milei/2.png";
+    break;
+  case BirdType::FUJIMORI:
+    idlePath = "assets/textures/fujimori/1.png";
+    flyingPath = "assets/textures/fujimori/2.png";
+    break;
+  case BirdType::KENJI:
+    idlePath = "assets/textures/fujimori/kenji1.png";
+    flyingPath = "assets/textures/fujimori/kenji2.png";
+    break;
+  case BirdType::MONTESINOS:
+    idlePath = "assets/textures/fujimori/montesinos1.png";
+    flyingPath = "assets/textures/fujimori/montesinos2.png";
+    break;
+  case BirdType::GARCIA:
+    idlePath = "assets/textures/multi/alan1.png";
+    flyingPath = "assets/textures/multi/alan2.png";
     break;
   }
+
+  auto &entry = BirdTextureCache::cache[type];
+
+  if (!entry.first) {
+    auto idle = std::make_unique<sf::Texture>();
+    if (!idle->loadFromFile(idlePath)) {
+      std::cerr << "Error loading idle texture for bird type: "
+                << static_cast<int>(type) << " from " << idlePath << "\n";
+      return;
+    }
+    entry.first = std::move(idle);
   }
+
+  if (!entry.second) {
+    auto flying = std::make_unique<sf::Texture>();
+    if (!flying->loadFromFile(flyingPath)) {
+      std::cerr << "Error loading flying texture for bird type: "
+                << static_cast<int>(type) << " from " << flyingPath << "\n";
+      return;
+    }
+    entry.second = std::move(flying);
+  }
+
+  idleTexture = entry.first.get();
+  flyingTexture = entry.second.get();
 
   const sf::Texture *initialTexture = idleTexture ? idleTexture : flyingTexture;
   if (initialTexture) {

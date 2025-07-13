@@ -56,6 +56,9 @@ void move_view(sf::View &levelView, sf::FloatRect &levelBounds) {
 void playBirdSound(BirdType birdType) {
   static sf::SoundBuffer mileiBuffer;
   static sf::SoundBuffer fujimoriBuffer;
+  static sf::SoundBuffer kenjiBuffer;
+  static sf::SoundBuffer montesinosBuffer;
+  static sf::SoundBuffer garciaBuffer;
   static bool buffersLoaded = false;
   static sf::Sound sound;
 
@@ -69,15 +72,39 @@ void playBirdSound(BirdType birdType) {
       std::cerr << "Failed to load audios/fujimori.ogg" << std::endl;
       loaded = false;
     }
+    if (!kenjiBuffer.loadFromFile("assets/audios/kenji2.ogg")) {
+      std::cerr << "Failed to load audios/kenji.ogg" << std::endl;
+      loaded = false;
+    }
+    if (!montesinosBuffer.loadFromFile("assets/audios/hayek.ogg")) {
+      std::cerr << "Failed to load audios/montesinos.ogg" << std::endl;
+      loaded = false;
+    }
+    if (!garciaBuffer.loadFromFile("assets/audios/alan1.ogg")) {
+      std::cerr << "Failed to load audios/alan.ogg" << std::endl;
+      loaded = false;
+    }
     buffersLoaded = loaded;
     if (!loaded)
       return;
   }
 
-  if (birdType == BirdType::MILEI) {
+  switch (birdType) {
+  case BirdType::MILEI:
     sound.setBuffer(mileiBuffer);
-  } else {
+    break;
+  case BirdType::FUJIMORI:
     sound.setBuffer(fujimoriBuffer);
+    break;
+  case BirdType::KENJI:
+    sound.setBuffer(kenjiBuffer);
+    break;
+  case BirdType::MONTESINOS:
+    sound.setBuffer(montesinosBuffer);
+    break;
+  case BirdType::GARCIA:
+    sound.setBuffer(garciaBuffer);
+    break;
   }
 
   sound.play();
@@ -140,8 +167,14 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   // IMPORTANT
   // TODO
   // FIx scaling from the texture. Currently, the texture goes over the circle
-  if (level == 0 || level == 1) {
+  if (level == 0) {
     birdType = BirdType::FUJIMORI;
+  } else if (level == 1) {
+    birdType = BirdType::KENJI;
+  } else if (level == 2) {
+    birdType = BirdType::MONTESINOS;
+  } else if (level == 3) {
+    birdType = BirdType::GARCIA;
   } else {
     birdType = BirdType::MILEI;
   }
@@ -187,6 +220,15 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
         } else if (evento.key.code == sf::Keyboard::Num3 ||
                    evento.key.code == sf::Keyboard::Numpad3) {
           pajaro.setBirdType(BirdType::FUJIMORI);
+        } else if (evento.key.code == sf::Keyboard::Num4 ||
+                   evento.key.code == sf::Keyboard::Numpad4) {
+          pajaro.setBirdType(BirdType::KENJI);
+        } else if (evento.key.code == sf::Keyboard::Num5 ||
+                   evento.key.code == sf::Keyboard::Numpad5) {
+          pajaro.setBirdType(BirdType::MONTESINOS);
+        } else if (evento.key.code == sf::Keyboard::Num6 ||
+                   evento.key.code == sf::Keyboard::Numpad6) {
+          pajaro.setBirdType(BirdType::GARCIA);
         } else*/
         if (evento.key.code == sf::Keyboard::Escape) {
           response = render_pause_menu(ventana);

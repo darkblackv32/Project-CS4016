@@ -5,7 +5,7 @@
 #include <string>
 #include <unordered_map>
 
-enum class BirdType { MILEI, FUJIMORI };
+enum class BirdType { MILEI, FUJIMORI, KENJI, MONTESINOS, GARCIA };
 
 struct BirdTextureCache; // forward declaration for texture cache
 
