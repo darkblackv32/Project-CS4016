@@ -6,6 +6,7 @@
 #include "Bird.h"
 #include "Constants.h"
 #include "Levels.h"
+#include "Particles.h"
 #include "Pause.h"
 #include "PhysicsWrapper.h"
 #include "Slingshot.h"
@@ -104,6 +105,9 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
 
   // For the pause/victory menu
   int response = 0;
+
+  // For the particle system
+  ParticleSystem particles;
 
   sf::Texture backgroundTexture;
   std::string backgroundPath;
@@ -278,6 +282,9 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     // Iterate through the bodies marked for destruction by the PhysicsWrapper
     for (b2Body *bodyToDestroy : lev->m_physics.toDestroy) {
       // Find the index by searching
+      sf::Vector2f destructionPos =
+          metersToPixels(bodyToDestroy->GetPosition());
+      particles.emit(destructionPos, 50);
       bool deleted = false;
       for (size_t i = 0; i < lev->m_bodies.size(); ++i) {
         if (lev->m_bodies[i] == bodyToDestroy) {
@@ -326,6 +333,9 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       }
     }
     lev->m_physics.toDestroy.clear();
+
+    // update particles
+    particles.update(deltaTime);
 
     // TODO
     // Also, when things dissapear, implement particle effects
@@ -400,6 +410,10 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     }
 
     pajaro.draw(ventana);
+
+    // Draw particles
+    particles.draw(ventana);
+
     // ventana.draw(instructionText);
     ventana.display();
   }
