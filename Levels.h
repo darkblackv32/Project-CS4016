@@ -23,6 +23,7 @@ enum class SFMLShapeType {
 
 struct Level {
   std::vector<std::unique_ptr<sf::Shape>> objects;
+  std::vector<sf::Texture> object_textures;
   std::vector<sf::Texture> target_textures;
   std::vector<sf::CircleShape> targets;
   std::vector<std::unique_ptr<sf::Shape>> floor;
@@ -47,7 +48,8 @@ struct Level {
   void setObjects(std::vector<sf::Vector2f> &objectSizes,
                   std::vector<std::pair<float, float>> &objectPos,
                   std::vector<sf::Color> &objectColors,
-                  const std::vector<SFMLShapeType> &shapeTypes = {});
+                  const std::vector<SFMLShapeType> &shapeTypes = {},
+                  const std::vector<std::string> &texturePaths = {});
 
   void setTargets(std::vector<sf::Vector2f> &objectSizes,
                   std::vector<std::pair<float, float>> &objectPos,

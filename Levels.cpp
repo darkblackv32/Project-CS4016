@@ -107,8 +107,12 @@ b2Body *Level::createBody(SFMLShapeType type, const sf::Vector2f &size,
 void Level::setObjects(std::vector<sf::Vector2f> &objectSizes,
                        std::vector<std::pair<float, float>> &objectPos,
                        std::vector<sf::Color> &objectColors,
-                       const std::vector<SFMLShapeType> &shapeTypes) {
+                       const std::vector<SFMLShapeType> &shapeTypes,
+                       const std::vector<std::string> &texturePaths) {
   // Assume good behavior, all vectos are of the same size
+  if (!texturePaths.empty()) {
+    this->object_textures.resize(texturePaths.size());
+  }
 
   for (int i = 0; i < objectSizes.size(); i++) {
     SFMLShapeType shapeType = shapeTypes[i];
@@ -123,6 +127,11 @@ void Level::setObjects(std::vector<sf::Vector2f> &objectSizes,
 
     auto shape = createSFMLShape(shapeType, temp, objectColors[i]);
     if (shape) {
+      if (!texturePaths.empty() && i < texturePaths.size()) {
+        if (this->object_textures[i].loadFromFile(texturePaths[i])) {
+          shape->setTexture(&this->object_textures[i]);
+        }
+      }
       m_bodies.push_back(temp);
       objects.push_back(std::move(shape));
     }
@@ -413,6 +422,7 @@ Level *return_level(int level, int width, int height) {
   int bound_x;
   int bound_y;
   std::vector<std::string> texturePaths;
+  std::vector<std::string> objTexturePaths;
 
   switch (level) {
   case 0: {
@@ -472,7 +482,12 @@ Level *return_level(int level, int width, int height) {
                   SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
                   SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE};
 
-    l->setObjects(objSizes, objPositions, objColors, shapeTypes);
+    for (int i = 0; i < objSizes.size(); ++i) {
+      objTexturePaths.push_back("./assets/textures/material/wood.png");
+    }
+
+    l->setObjects(objSizes, objPositions, objColors, shapeTypes,
+                  objTexturePaths);
 
     objSizes = {sf::Vector2f(bound_x, BLOCK * 2)};
     objPositions = {std::make_pair(0.0f, bound_y - 2 * BLOCK)};
@@ -606,7 +621,12 @@ Level *return_level(int level, int width, int height) {
                   SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
                   SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE};
 
-    l->setObjects(objSizes, objPositions, objColors, shapeTypes);
+    objTexturePaths.clear();
+    for (int i = 0; i < objSizes.size(); ++i) {
+      objTexturePaths.push_back("./assets/textures/material/wood.png");
+    }
+    l->setObjects(objSizes, objPositions, objColors, shapeTypes,
+                  objTexturePaths);
 
     objSizes = {sf::Vector2f(bound_x, BLOCK * 2)};
     objPositions = {std::make_pair(0.0f, bound_y - 2 * BLOCK)};
@@ -752,9 +772,17 @@ Level *return_level(int level, int width, int height) {
                   SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
                   SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
                   SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
-                  SFMLShapeType::RECTANGLE};
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE};
 
-    l->setObjects(objSizes, objPositions, objColors, shapeTypes);
+    objTexturePaths.clear();
+    for (int i = 0; i < objSizes.size(); ++i) {
+      objTexturePaths.push_back("./assets/textures/material/wood.png");
+    }
+    l->setObjects(objSizes, objPositions, objColors, shapeTypes,
+                  objTexturePaths);
 
     objSizes = {
         sf::Vector2f(bound_x, BLOCK * 2),
@@ -903,6 +931,8 @@ Level *return_level(int level, int width, int height) {
         SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
         SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
         SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+        SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+        SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
     };
 
     l->setObjects(objSizes, objPositions, objColors, shapeTypes);
@@ -977,7 +1007,12 @@ Level *return_level(int level, int width, int height) {
 
     shapeTypes = {SFMLShapeType::TRIANGLE};
 
-    l->setObjects(objSizes, objPositions, objColors, shapeTypes);
+    objTexturePaths.clear();
+    for (int i = 0; i < objSizes.size(); ++i) {
+      objTexturePaths.push_back("./assets/textures/material/wood.png");
+    }
+    l->setObjects(objSizes, objPositions, objColors, shapeTypes,
+                  objTexturePaths);
 
     objSizes = {
         sf::Vector2f(bound_x, BLOCK * 2),
