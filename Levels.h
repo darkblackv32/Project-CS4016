@@ -2,9 +2,9 @@
 
 #include "PhysicsWrapper.h"
 #include <SFML/Graphics.hpp>
-#include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/ConvexShape.hpp>
+#include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <memory>
 #include <utility>
@@ -12,19 +12,19 @@
 
 // Enum para los tipos de figuras geométricas usando SFML shapes
 enum class SFMLShapeType {
-    RECTANGLE,
-    CIRCLE,
-    TRIANGLE,
-    DIAMOND,
-    HEXAGON,
-    PENTAGON,
-    CUSTOM_POLYGON
+  RECTANGLE,
+  CIRCLE,
+  TRIANGLE,
+  DIAMOND,
+  HEXAGON,
+  PENTAGON,
+  CUSTOM_POLYGON
 };
 
 struct Level {
   std::vector<std::unique_ptr<sf::Shape>> objects;
   std::vector<sf::Texture> target_textures;
-  std::vector<std::unique_ptr<sf::Shape>> targets;
+  std::vector<sf::CircleShape> targets;
   std::vector<std::unique_ptr<sf::Shape>> floor;
 
   std::vector<b2Body *> m_bodies;
@@ -52,8 +52,8 @@ struct Level {
   void setTargets(std::vector<sf::Vector2f> &objectSizes,
                   std::vector<std::pair<float, float>> &objectPos,
                   std::vector<sf::Color> &objectColors,
-                  const std::vector<std::string> &texturePaths,
-                  const std::vector<SFMLShapeType> &shapeTypes = {});
+                  const std::vector<std::string> &texturePaths);
+
   void setFloor(std::vector<sf::Vector2f> &objectSizes,
                 std::vector<std::pair<float, float>> &objectPos,
                 std::vector<sf::Color> &objectColors,
@@ -64,25 +64,20 @@ struct Level {
 
   void setBounds(float x, float y);
 
-  b2Body *createBox(float x, float y, float halfWidth, float halfHeight);
-  b2Body *createCircle(float x, float y, float radius);
+  b2Body *createBox(float x, float y, float halfWidth, float halfHeight,
+                    bool dynamic);
+  b2Body *createTriangle(float x, float y, float size, bool dynamic);
+
+  b2Body *createCircle(float x, float y, float radius, bool dynamic);
   b2Body *createBird(const sf::Vector2f &pos, float radius);
 
   // Factory methods para crear diferentes tipos de shapes SFML
-  std::unique_ptr<sf::Shape> createSFMLShape(SFMLShapeType type, 
-                                             const sf::Vector2f& size, 
-                                             const sf::Vector2f& position, 
-                                             const sf::Color& color);
-  std::unique_ptr<sf::ConvexShape> createTriangle(const sf::Vector2f& size, 
-                                                  const sf::Vector2f& position);
-  std::unique_ptr<sf::ConvexShape> createDiamond(const sf::Vector2f& size, 
-                                                 const sf::Vector2f& position);
-  std::unique_ptr<sf::ConvexShape> createHexagon(const sf::Vector2f& size, 
-                                                 const sf::Vector2f& position);
-  std::unique_ptr<sf::ConvexShape> createPentagon(const sf::Vector2f& size, 
-                                                  const sf::Vector2f& position);
-  std::unique_ptr<sf::ConvexShape> createCustomPolygon(const std::vector<sf::Vector2f>& vertices,
-                                                        const sf::Vector2f& position);
+  std::unique_ptr<sf::Shape> createSFMLShape(SFMLShapeType type, b2Body *body,
+                                             const sf::Color &color);
+
+  b2Body *createBody(SFMLShapeType type, const sf::Vector2f &size,
+                     const sf::Vector2f &position, const sf::Color &color,
+                     bool dynamic);
 
   void render(sf::RenderWindow &ventana);
   void run(float deltaTime);

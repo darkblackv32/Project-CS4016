@@ -3,7 +3,9 @@
 #include "PhysicsWrapper.h"
 #include "helper.h"
 #include <SFML/Graphics.hpp>
+#include <SFML/Graphics/ConvexShape.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
+#include <SFML/System/Vector2.hpp>
 #include <iostream>
 #include <utility>
 #include <vector>
@@ -17,72 +19,147 @@ Level::Level() : m_physics(b2Vec2(0.0f, 9.8f)) {
 
 Level::~Level() {}
 
+// Factory methods para crear diferentes tipos de shapes SFML
+std::unique_ptr<sf::Shape> Level::createSFMLShape(SFMLShapeType type,
+                                                  b2Body *body,
+                                                  const sf::Color &color) {
+
+  if (type == SFMLShapeType::CIRCLE) {
+    // TODO
+  } else {
+    // Is a polygon
+    b2Fixture *fixture = body->GetFixtureList();
+    sf::Vector2f pos = metersToPixels(body->GetPosition());
+    float angle = body->GetAngle() * 180.f / b2_pi;
+
+    b2PolygonShape *polyShape = (b2PolygonShape *)fixture->GetShape();
+    int vertexCount = polyShape->m_count;
+    sf::ConvexShape convex;
+    convex.setPointCount(vertexCount);
+    for (int i = 0; i < vertexCount; i++) {
+      sf::Vector2f point = metersToPixels(polyShape->m_vertices[i]);
+      convex.setPoint(i, point);
+    }
+    // Check for misalignments
+    // TODO
+    convex.setPosition(pos);
+    convex.setRotation(angle);
+    convex.setFillColor(color);
+    convex.setOutlineColor({170, 143, 24});
+    convex.setOutlineThickness(LINE_THICKNESS);
+
+    return std::make_unique<sf::ConvexShape>(convex);
+  }
+
+  return nullptr;
+}
+
+// Factory methods para crear diferentes tipos de shapes bodies
+b2Body *Level::createBody(SFMLShapeType type, const sf::Vector2f &size,
+                          const sf::Vector2f &position, const sf::Color &color,
+                          bool dynamic) {
+
+  // Physics - crear cuerpo estático
+  b2Body *temp = nullptr;
+
+  // Review parameters for incorrect positioning
+
+  switch (type) {
+  case SFMLShapeType::CIRCLE: {
+    temp = createCircle(position.x, position.y, size.x, dynamic);
+
+    break;
+  }
+  case SFMLShapeType::RECTANGLE: {
+    temp = createBox(position.x + size.x / 2.0f, position.y + size.y / 2.0f,
+                     size.x / 2.0f, size.y / 2.0f, dynamic);
+
+    break;
+  }
+  case SFMLShapeType::TRIANGLE: {
+    temp = createTriangle(position.x, position.y, size.x, dynamic);
+    break;
+  }
+  case SFMLShapeType::HEXAGON: {
+    // TODO
+    break;
+  }
+  case SFMLShapeType::PENTAGON: {
+    // TODO
+    break;
+  }
+  case SFMLShapeType::CUSTOM_POLYGON: {
+    // TODO
+    break;
+  }
+  default: {
+    break;
+  }
+  }
+  if (temp != nullptr) {
+    temp->SetSleepingAllowed(true);
+    temp->SetAwake(false);
+  }
+
+  return temp;
+}
+
 void Level::setObjects(std::vector<sf::Vector2f> &objectSizes,
                        std::vector<std::pair<float, float>> &objectPos,
                        std::vector<sf::Color> &objectColors,
                        const std::vector<SFMLShapeType> &shapeTypes) {
+  // Assume good behavior, all vectos are of the same size
 
-  std::vector<std::unique_ptr<sf::Shape>> objects;
   for (int i = 0; i < objectSizes.size(); i++) {
-    // Determinar tipo de shape (por defecto RECTANGLE)
-    SFMLShapeType shapeType = (i < shapeTypes.size()) ? shapeTypes[i] : SFMLShapeType::RECTANGLE;
-    
+    SFMLShapeType shapeType = shapeTypes[i];
+
     // Physics - crear cuerpo físico apropiado según el tipo
-    b2Body *temp_body = nullptr;
-    sf::Vector2f pos;
-    
-    switch (shapeType) {
-      case SFMLShapeType::CIRCLE: {
-        float radius = objectSizes[i].x / 2.0f; // usar componente x como radio
-        temp_body = createCircle(objectPos[i].first + radius, 
-                                objectPos[i].second + radius, radius);
-        break;
-      }
-      case SFMLShapeType::RECTANGLE:
-      case SFMLShapeType::TRIANGLE:
-      case SFMLShapeType::DIAMOND:
-      case SFMLShapeType::HEXAGON:
-      case SFMLShapeType::PENTAGON:
-      default: {
-        // Para rectángulos y otras formas, usar física de caja
-        temp_body = createBox(objectPos[i].first + objectSizes[i].x / 2,
-                              objectPos[i].second + objectSizes[i].y / 2,
-                              objectSizes[i].x / 2, objectSizes[i].y / 2);
-        break;
-      }
-    }
-    
-    if (!temp_body) continue;
-    
-    pos = metersToPixels(temp_body->GetPosition());
-    float angle = temp_body->GetAngle() * 180.f / b2_pi;
+    sf::Vector2f position = {objectPos[i].first, objectPos[i].second};
+    b2Body *temp =
+        createBody(shapeType, objectSizes[i], position, objectColors[i], true);
 
-    bodyLife *object_life = new bodyLife(OBJECT_LIFE, OBJECT_DEFENSE);
-    temp_body->SetUserData(object_life);
+    if (!temp)
+      continue;
 
-    // SFML - crear shape apropiado
-    auto shape = createSFMLShape(shapeType, objectSizes[i], pos, objectColors[i]);
+    auto shape = createSFMLShape(shapeType, temp, objectColors[i]);
     if (shape) {
-      shape->setPosition(pos);
-      shape->setRotation(angle);
-      shape->setOutlineColor({170, 143, 24});
-      shape->setOutlineThickness(LINE_THICKNESS);
+      m_bodies.push_back(temp);
       objects.push_back(std::move(shape));
     }
   }
-
-  this->objects = std::move(objects);
 }
 
-b2Body *Level::createBox(float x, float y, float halfWidth, float halfHeight) {
+b2Body *Level::createTriangle(float x, float y, float size, bool dynamic) {
   b2BodyDef bodyDef;
-  bodyDef.type = b2_dynamicBody;
+  if (dynamic) {
+    bodyDef.type = b2_dynamicBody;
+  }
+  bodyDef.position.Set(x / SCALE, y / SCALE);
+  b2Body *triangleBody = m_physics.CreateBody(&bodyDef);
+  b2PolygonShape triangleShape;
+  b2Vec2 vertices[3];
+  vertices[0].Set(0.0f, -size / SCALE);
+  vertices[1].Set(size / SCALE, size / SCALE);
+  vertices[2].Set(-size / SCALE, size / SCALE);
+  triangleShape.Set(vertices, 3);
+  m_physics.CreatePolygonFixture(triangleBody, &triangleShape, 1.5f);
+
+  triangleBody->SetSleepingAllowed(true);
+  triangleBody->SetAwake(false);
+  return triangleBody;
+}
+
+b2Body *Level::createBox(float x, float y, float halfWidth, float halfHeight,
+                         bool dynamic) {
+  b2BodyDef bodyDef;
+  if (dynamic) {
+    bodyDef.type = b2_dynamicBody;
+  }
   bodyDef.position.Set(x / SCALE, y / SCALE);
   b2Body *boxBody = m_physics.CreateBody(&bodyDef);
 
   m_physics.CreateBoxFixture(boxBody, halfWidth / SCALE, halfHeight / SCALE,
                              1.0f);
-  m_bodies.push_back(boxBody);
 
   boxBody->SetSleepingAllowed(true);
   boxBody->SetAwake(false);
@@ -90,16 +167,17 @@ b2Body *Level::createBox(float x, float y, float halfWidth, float halfHeight) {
   return boxBody;
 }
 
-b2Body *Level::createCircle(float x, float y, float radius) {
+b2Body *Level::createCircle(float x, float y, float radius, bool dynamic) {
   b2BodyDef bodyDef;
-  bodyDef.type = b2_dynamicBody;
+  if (dynamic) {
+    bodyDef.type = b2_dynamicBody;
+  }
   bodyDef.position.Set(x / SCALE, y / SCALE);
   b2Body *circleBody = m_physics.CreateBody(&bodyDef);
 
   b2CircleShape circleShape;
   circleShape.m_radius = radius / SCALE;
   m_physics.CreateCircleFixture(circleBody, &circleShape, 1.0f);
-  m_bodies.push_back(circleBody);
 
   circleBody->SetSleepingAllowed(true);
   circleBody->SetAwake(false);
@@ -124,200 +202,26 @@ b2Body *Level::createBird(const sf::Vector2f &pos, float radius) {
   return m_birdBody;
 }
 
-// Factory methods para crear diferentes tipos de shapes SFML
-std::unique_ptr<sf::Shape> Level::createSFMLShape(SFMLShapeType type, 
-                                                   const sf::Vector2f& size, 
-                                                   const sf::Vector2f& position, 
-                                                   const sf::Color& color) {
-  switch (type) {
-    case SFMLShapeType::RECTANGLE: {
-      auto rect = std::make_unique<sf::RectangleShape>(size);
-      rect->setPosition(position);
-      rect->setFillColor(color);
-      rect->setOrigin(size.x / 2.0f, size.y / 2.0f);
-      return rect;
-    }
-    case SFMLShapeType::CIRCLE: {
-      float radius = size.x / 2.0f; // usar componente x como radio
-      auto circle = std::make_unique<sf::CircleShape>(radius);
-      circle->setPosition(position);
-      circle->setFillColor(color);
-      circle->setOrigin(radius, radius);
-      return circle;
-    }
-    case SFMLShapeType::TRIANGLE: {
-      auto triangle = createTriangle(size, position);
-      triangle->setFillColor(color);
-      return triangle;
-    }
-    case SFMLShapeType::DIAMOND: {
-      auto diamond = createDiamond(size, position);
-      diamond->setFillColor(color);
-      return diamond;
-    }
-    case SFMLShapeType::HEXAGON: {
-      auto hexagon = createHexagon(size, position);
-      hexagon->setFillColor(color);
-      return hexagon;
-    }
-    case SFMLShapeType::PENTAGON: {
-      auto pentagon = createPentagon(size, position);
-      pentagon->setFillColor(color);
-      return pentagon;
-    }
-    default:
-      // Por defecto crear un rectángulo
-      auto rect = std::make_unique<sf::RectangleShape>(size);
-      rect->setPosition(position);
-      rect->setFillColor(color);
-      rect->setOrigin(size.x / 2.0f, size.y / 2.0f);
-      return rect;
-  }
-}
-
-std::unique_ptr<sf::ConvexShape> Level::createTriangle(const sf::Vector2f& size, 
-                                                       const sf::Vector2f& position) {
-  auto triangle = std::make_unique<sf::ConvexShape>(3);
-  
-  float halfWidth = size.x / 2.0f;
-  float halfHeight = size.y / 2.0f;
-  
-  // Vértices de un triángulo equilátero
-  triangle->setPoint(0, sf::Vector2f(0, -halfHeight));        // Vértice superior
-  triangle->setPoint(1, sf::Vector2f(-halfWidth, halfHeight)); // Vértice inferior izquierdo
-  triangle->setPoint(2, sf::Vector2f(halfWidth, halfHeight));  // Vértice inferior derecho
-  
-  triangle->setPosition(position);
-  triangle->setOrigin(0, 0); // Centro en el origen
-  
-  return triangle;
-}
-
-std::unique_ptr<sf::ConvexShape> Level::createDiamond(const sf::Vector2f& size, 
-                                                      const sf::Vector2f& position) {
-  auto diamond = std::make_unique<sf::ConvexShape>(4);
-  
-  float halfWidth = size.x / 2.0f;
-  float halfHeight = size.y / 2.0f;
-  
-  // Vértices de un diamante
-  diamond->setPoint(0, sf::Vector2f(0, -halfHeight));      // Vértice superior
-  diamond->setPoint(1, sf::Vector2f(halfWidth, 0));       // Vértice derecho
-  diamond->setPoint(2, sf::Vector2f(0, halfHeight));      // Vértice inferior
-  diamond->setPoint(3, sf::Vector2f(-halfWidth, 0));      // Vértice izquierdo
-  
-  diamond->setPosition(position);
-  diamond->setOrigin(0, 0);
-  
-  return diamond;
-}
-
-std::unique_ptr<sf::ConvexShape> Level::createHexagon(const sf::Vector2f& size, 
-                                                      const sf::Vector2f& position) {
-  auto hexagon = std::make_unique<sf::ConvexShape>(6);
-  
-  float radius = size.x / 2.0f;
-  
-  // Vértices de un hexágono regular
-  for (int i = 0; i < 6; ++i) {
-    float angle = i * 60.0f * 3.14159f / 180.0f; // 60 grados en radianes
-    float x = radius * std::cos(angle);
-    float y = radius * std::sin(angle);
-    hexagon->setPoint(i, sf::Vector2f(x, y));
-  }
-  
-  hexagon->setPosition(position);
-  hexagon->setOrigin(0, 0);
-  
-  return hexagon;
-}
-
-std::unique_ptr<sf::ConvexShape> Level::createPentagon(const sf::Vector2f& size, 
-                                                       const sf::Vector2f& position) {
-  auto pentagon = std::make_unique<sf::ConvexShape>(5);
-  
-  float radius = size.x / 2.0f;
-  
-  // Vértices de un pentágono regular
-  for (int i = 0; i < 5; ++i) {
-    float angle = i * 72.0f * 3.14159f / 180.0f; // 72 grados en radianes
-    float x = radius * std::cos(angle);
-    float y = radius * std::sin(angle);
-    pentagon->setPoint(i, sf::Vector2f(x, y));
-  }
-  
-  pentagon->setPosition(position);
-  pentagon->setOrigin(0, 0);
-  
-  return pentagon;
-}
-
-std::unique_ptr<sf::ConvexShape> Level::createCustomPolygon(const std::vector<sf::Vector2f>& vertices,
-                                                            const sf::Vector2f& position) {
-  auto polygon = std::make_unique<sf::ConvexShape>(vertices.size());
-  
-  for (size_t i = 0; i < vertices.size(); ++i) {
-    polygon->setPoint(i, vertices[i]);
-  }
-  
-  polygon->setPosition(position);
-  
-  return polygon;
-}
-
 void Level::setTargets(std::vector<sf::Vector2f> &objectSizes,
                        std::vector<std::pair<float, float>> &objectPos,
                        std::vector<sf::Color> &objectColors,
-                       const std::vector<std::string> &texturePaths,
-                       const std::vector<SFMLShapeType> &shapeTypes) {
+                       const std::vector<std::string> &texturePaths) {
 
-  std::vector<std::unique_ptr<sf::Shape>> objects;
   if (!texturePaths.empty()) {
     this->target_textures.resize(texturePaths.size());
   }
   for (int i = 0; i < objectSizes.size(); i++) {
-    // Determinar tipo de shape (por defecto CIRCLE para targets)
-    SFMLShapeType shapeType = (i < shapeTypes.size()) ? shapeTypes[i] : SFMLShapeType::CIRCLE;
-    
-    // Physics - crear cuerpo físico apropiado según el tipo
+    // Physics
     b2Body *temp_target = nullptr;
-    sf::Vector2f pos;
-    
-    switch (shapeType) {
-      case SFMLShapeType::CIRCLE: {
-        float radius = objectSizes[i].x; // usar componente x como radio
-        b2BodyDef targetDef;
-        targetDef.type = b2_dynamicBody;
-        targetDef.position.Set((objectPos[i].first + radius) / SCALE,
-                               (objectPos[i].second + radius) / SCALE);
-        temp_target = m_physics.CreateBody(&targetDef);
+    b2BodyDef targetDef;
+    targetDef.type = b2_dynamicBody;
+    targetDef.position.Set((objectPos[i].first + objectSizes[i].x) / SCALE,
+                           (objectPos[i].second + objectSizes[i].y) / SCALE);
+    temp_target = m_physics.CreateBody(&targetDef);
 
-        b2CircleShape targetShape;
-        targetShape.m_radius = radius / SCALE;
-        m_physics.CreateCircleFixture(temp_target, &targetShape, 0.5f);
-        break;
-      }
-      case SFMLShapeType::RECTANGLE:
-      case SFMLShapeType::TRIANGLE:
-      case SFMLShapeType::DIAMOND:
-      case SFMLShapeType::HEXAGON:
-      case SFMLShapeType::PENTAGON:
-      default: {
-        // Para otras formas, usar física de caja
-        b2BodyDef targetDef;
-        targetDef.type = b2_dynamicBody;
-        targetDef.position.Set((objectPos[i].first + objectSizes[i].x / 2) / SCALE,
-                               (objectPos[i].second + objectSizes[i].y / 2) / SCALE);
-        temp_target = m_physics.CreateBody(&targetDef);
-
-        b2PolygonShape targetShape;
-        targetShape.SetAsBox(objectSizes[i].x / 2.0f / SCALE, objectSizes[i].y / 2.0f / SCALE);
-        temp_target->CreateFixture(&targetShape, 0.5f);
-        break;
-      }
-    }
-    
-    if (!temp_target) continue;
+    b2CircleShape targetShape;
+    targetShape.m_radius = objectSizes[i].x / SCALE;
+    m_physics.CreateCircleFixture(temp_target, &targetShape, 0.5f);
 
     temp_target->SetSleepingAllowed(true);
     temp_target->SetAwake(false);
@@ -327,89 +231,54 @@ void Level::setTargets(std::vector<sf::Vector2f> &objectSizes,
     bodyLife *object_life = new bodyLife(TARGET_LIFE, TARGET_DEFENSE);
     temp_target->SetUserData(object_life);
 
-    // SFML - crear shape apropiado
-    pos = metersToPixels(temp_target->GetPosition());
+    // SFML
+    b2Fixture *fixture = temp_target->GetFixtureList();
+    b2Shape::Type shapeType = fixture->GetType();
+    sf::Vector2f pos = metersToPixels(temp_target->GetPosition());
     float angle = temp_target->GetAngle() * 180.f / b2_pi;
 
-    auto shape = createSFMLShape(shapeType, objectSizes[i], pos, objectColors[i]);
-    if (shape) {
-      shape->setPosition(pos);
-      shape->setRotation(angle);
-      
-      // Aplicar textura si está disponible
-      if (!texturePaths.empty() && i < texturePaths.size()) {
-        if (this->target_textures[i].loadFromFile(texturePaths[i])) {
-          shape->setTexture(&this->target_textures[i]);
-        }
+    sf::CircleShape circle(fixture->GetShape()->m_radius * SCALE);
+    if (!texturePaths.empty() && i < texturePaths.size()) {
+      if (this->target_textures[i].loadFromFile(texturePaths[i])) {
+        circle.setTexture(&this->target_textures[i]);
+      } else {
+        circle.setFillColor(objectColors[i]);
       }
-      
-      objects.push_back(std::move(shape));
+    } else {
+      circle.setFillColor(objectColors[i]);
     }
-  }
+    circle.setOrigin(circle.getRadius(), circle.getRadius());
+    circle.setPosition(pos);
+    circle.setRotation(angle);
 
-  this->targets = std::move(objects);
+    targets.push_back(circle);
+  }
 }
 
 void Level::setFloor(std::vector<sf::Vector2f> &objectSizes,
                      std::vector<std::pair<float, float>> &objectPos,
                      std::vector<sf::Color> &objectColors,
                      const std::vector<SFMLShapeType> &shapeTypes) {
+  // Assuming good behavior and the 4 vectors are equal
 
-  std::vector<std::unique_ptr<sf::Shape>> objects;
   for (int i = 0; i < objectSizes.size(); i++) {
     // Determinar tipo de shape (por defecto RECTANGLE para el suelo)
-    SFMLShapeType shapeType = (i < shapeTypes.size()) ? shapeTypes[i] : SFMLShapeType::RECTANGLE;
-    
-    // Physics - crear cuerpo estático
-    b2Body *temp_static = nullptr;
-    b2BodyDef groundBodyDef;
-    
-    switch (shapeType) {
-      case SFMLShapeType::CIRCLE: {
-        float radius = objectSizes[i].x / 2.0f; // usar componente x como radio
-        groundBodyDef.position.Set((objectPos[i].first + radius) / SCALE,
-                                   (objectPos[i].second + radius) / SCALE);
-        temp_static = m_physics.CreateBody(&groundBodyDef);
-        
-        b2CircleShape groundCircle;
-        groundCircle.m_radius = radius / SCALE;
-        temp_static->CreateFixture(&groundCircle, 0.0f);
-        break;
-      }
-      case SFMLShapeType::RECTANGLE:
-      case SFMLShapeType::TRIANGLE:
-      case SFMLShapeType::DIAMOND:
-      case SFMLShapeType::HEXAGON:
-      case SFMLShapeType::PENTAGON:
-      default: {
-        // Para rectángulos y otras formas, usar física de caja
-        groundBodyDef.position.Set(
-            (objectPos[i].first + objectSizes[i].x / 2.0f) / SCALE,
-            (objectPos[i].second + objectSizes[i].y) / SCALE);
-        temp_static = m_physics.CreateBody(&groundBodyDef);
-        
-        b2PolygonShape groundBox;
-        groundBox.SetAsBox(objectSizes[i].x / 2.f / SCALE,
-                           objectSizes[i].y / SCALE);
-        temp_static->CreateFixture(&groundBox, 0.0f);
-        break;
-      }
-    }
-    
-    if (!temp_static) continue;
-    
-    m_static.push_back(temp_static);
+    SFMLShapeType shapeType = shapeTypes[i];
+    sf::Vector2f position(objectPos[i].first, objectPos[i].second);
+
+    b2Body *temp_static =
+        createBody(shapeType, objectSizes[i], position, objectColors[i], false);
+
+    if (!temp_static)
+      continue;
 
     // SFML - crear shape apropiado
-    sf::Vector2f position(objectPos[i].first, objectPos[i].second);
-    auto shape = createSFMLShape(shapeType, objectSizes[i], position, objectColors[i]);
+    auto shape = createSFMLShape(shapeType, temp_static, objectColors[i]);
     if (shape) {
-      shape->setPosition(position);
-      objects.push_back(std::move(shape));
+      m_static.push_back(temp_static);
+      floor.push_back(std::move(shape));
     }
   }
-
-  this->floor = std::move(objects);
 }
 
 void Level::setStarts(float x, float y) {
@@ -427,9 +296,9 @@ void Level::setBounds(float x, float y) {
 void Level::render(sf::RenderWindow &ventana) {
   // Also updates their positions according to the physics bodies
   // Renders the objects, targets and floor.
-  
+
   // Render floor shapes
-  for (auto& floorShape : this->floor) {
+  for (auto &floorShape : this->floor) {
     if (floorShape) {
       ventana.draw(*floorShape);
     }
@@ -452,8 +321,6 @@ void Level::render(sf::RenderWindow &ventana) {
   std::vector<int> idx_remove;
   for (int i = 0; i < this->targets.size(); i++) {
     // check if outside the bounds to delete
-    if (!targets[i] || i >= m_targets.size()) continue;
-
     b2Body *body = m_targets[i];
     sf::Vector2f pos = metersToPixels(body->GetPosition());
     if (pos.x > x_bound + 100 || pos.x < -100 || pos.y > y_bound + 100) {
@@ -462,18 +329,27 @@ void Level::render(sf::RenderWindow &ventana) {
     }
 
     // Update position and rotation from physics body
-    pos = metersToPixels(body->GetPosition());
-    float angle = body->GetAngle() * 180.f / b2_pi;
+    b2Fixture *fixture = body->GetFixtureList();
 
-    targets[i]->setPosition(pos);
-    targets[i]->setRotation(angle);
-    
-    // Apply texture if available
-    if (i < this->target_textures.size()) {
-      targets[i]->setTexture(&this->target_textures[i]);
+    while (fixture) {
+      b2Shape::Type shapeType = fixture->GetType();
+      pos = metersToPixels(body->GetPosition());
+      float angle = body->GetAngle() * 180.f / b2_pi;
+
+      b2PolygonShape *poly = (b2PolygonShape *)fixture->GetShape();
+      // Asumimos que es una caja creada con SetAsBox
+      b2Vec2 halfSize = poly->m_vertices[2];
+
+      sf::CircleShape circle = targets[i];
+      circle.setPosition(pos);
+      circle.setRotation(angle);
+      if (i < this->target_textures.size()) {
+        circle.setTexture(&this->target_textures[i]);
+      }
+      ventana.draw(circle);
+
+      fixture = fixture->GetNext();
     }
-    
-    ventana.draw(*targets[i]);
   }
 
   int deleted_so_far = 0;
@@ -529,6 +405,7 @@ Level *return_level(int level, int width, int height) {
   std::vector<sf::Vector2f> objSizes;
   std::vector<std::pair<float, float>> objPositions;
   std::vector<sf::Color> objColors;
+  std::vector<SFMLShapeType> shapeTypes;
   Level *l = new Level();
   l->setNLevel(level);
   float START_LEVEL_X;
@@ -583,25 +460,26 @@ Level *return_level(int level, int width, int height) {
     };
 
     objColors = {
-        {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {150, 50, 200},
-        {150, 50, 200}, {0, 0, 0}, {200, 100, 50}, {200, 100, 50}, {0, 0, 0},
+        {0, 0, 0},      {0, 0, 0},      {0, 0, 0}, {0, 0, 0},
+        {150, 50, 200}, {150, 50, 200}, {0, 0, 0}, {200, 100, 50},
+        {200, 100, 50}, {0, 0, 0},
     };
 
     // Add shape types - some rectangles, some pentagons
-    std::vector<SFMLShapeType> shapeTypes = {
-        SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE, 
-        SFMLShapeType::RECTANGLE, SFMLShapeType::PENTAGON, SFMLShapeType::PENTAGON,
-        SFMLShapeType::RECTANGLE, SFMLShapeType::PENTAGON, SFMLShapeType::PENTAGON, 
-        SFMLShapeType::RECTANGLE
-    };
+    shapeTypes = {SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE};
 
     l->setObjects(objSizes, objPositions, objColors, shapeTypes);
 
     objSizes = {sf::Vector2f(bound_x, BLOCK * 2)};
     objPositions = {std::make_pair(0.0f, bound_y - 2 * BLOCK)};
     objColors = {{120, 110, 100}};
+    shapeTypes = {SFMLShapeType::RECTANGLE};
 
-    l->setFloor(objSizes, objPositions, objColors);
+    l->setFloor(objSizes, objPositions, objColors, shapeTypes);
 
     // We use the same vector for simplicity, It holds the radio
     objSizes = {sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f)};
@@ -713,13 +591,29 @@ Level *return_level(int level, int width, int height) {
         {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
     };
 
-    l->setObjects(objSizes, objPositions, objColors);
+    shapeTypes = {SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE};
+
+    l->setObjects(objSizes, objPositions, objColors, shapeTypes);
 
     objSizes = {sf::Vector2f(bound_x, BLOCK * 2)};
     objPositions = {std::make_pair(0.0f, bound_y - 2 * BLOCK)};
     objColors = {{120, 110, 100}};
+    shapeTypes = {SFMLShapeType::RECTANGLE};
 
-    l->setFloor(objSizes, objPositions, objColors);
+    l->setFloor(objSizes, objPositions, objColors, shapeTypes);
 
     objSizes = {// inside
                 sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
@@ -848,7 +742,19 @@ Level *return_level(int level, int width, int height) {
         {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
     };
 
-    l->setObjects(objSizes, objPositions, objColors);
+    shapeTypes = {SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE};
+
+    l->setObjects(objSizes, objPositions, objColors, shapeTypes);
 
     objSizes = {
         sf::Vector2f(bound_x, BLOCK * 2),
@@ -862,7 +768,10 @@ Level *return_level(int level, int width, int height) {
                        START_LEVEL_Y - 4 * BLOCK)};
     objColors = {{120, 110, 100}, {120, 110, 100}, {120, 110, 100}};
 
-    l->setFloor(objSizes, objPositions, objColors);
+    shapeTypes = {SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE};
+
+    l->setFloor(objSizes, objPositions, objColors, shapeTypes);
 
     objSizes = {// inside
                 sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
@@ -981,7 +890,22 @@ Level *return_level(int level, int width, int height) {
         {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
     };
 
-    l->setObjects(objSizes, objPositions, objColors);
+    shapeTypes = {
+        SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+        SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+        SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+        SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+        SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+        SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+        SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+        SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+        SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+        SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+        SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+        SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+    };
+
+    l->setObjects(objSizes, objPositions, objColors, shapeTypes);
 
     objSizes = {
         sf::Vector2f(bound_x, BLOCK * 2),
@@ -1007,7 +931,11 @@ Level *return_level(int level, int width, int height) {
                  {120, 110, 100},
                  {120, 110, 100}};
 
-    l->setFloor(objSizes, objPositions, objColors);
+    shapeTypes = {SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
+                  SFMLShapeType::RECTANGLE};
+
+    l->setFloor(objSizes, objPositions, objColors, shapeTypes);
 
     objSizes = {
         sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
@@ -1031,6 +959,7 @@ Level *return_level(int level, int width, int height) {
 
   case 4:
     // Level for testing the killing of birds
+    // And triangles
     bound_x = 2000;
     bound_y = 1000;
     START_LEVEL_X = bound_x - BLOCK * 26;
@@ -1040,13 +969,15 @@ Level *return_level(int level, int width, int height) {
 
     l->setBounds(bound_x, bound_y);
 
-    objSizes = {};
+    objSizes = {sf::Vector2f(BLOCK, BLOCK)};
 
-    objPositions = {};
+    objPositions = {std::make_pair(START_LEVEL_X, START_LEVEL_Y - BLOCK)};
 
-    objColors = {};
+    objColors = {{0, 0, 0}};
 
-    l->setObjects(objSizes, objPositions, objColors);
+    shapeTypes = {SFMLShapeType::TRIANGLE};
+
+    l->setObjects(objSizes, objPositions, objColors, shapeTypes);
 
     objSizes = {
         sf::Vector2f(bound_x, BLOCK * 2),
@@ -1059,13 +990,15 @@ Level *return_level(int level, int width, int height) {
     };
     objColors = {{120, 110, 100}, {120, 110, 100}};
 
-    l->setFloor(objSizes, objPositions, objColors);
+    shapeTypes = {SFMLShapeType::RECTANGLE, SFMLShapeType::TRIANGLE};
+
+    l->setFloor(objSizes, objPositions, objColors, shapeTypes);
 
     objSizes = {
         sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
     };
     objPositions = {
-        std::make_pair(START_LEVEL_X + 2 * BLOCK, START_LEVEL_Y - 2 * BLOCK),
+        std::make_pair(START_LEVEL_X + 2 * BLOCK, START_LEVEL_Y - BLOCK),
     };
     objColors = {{9, 186, 45}};
 
