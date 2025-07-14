@@ -208,6 +208,22 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   Bird pajaro(levelBirds[currentBirdIndex], pos_resortera);
   Slingshot resortera(pos_resortera);
 
+  std::vector<Bird> birdQueue;
+  auto updateBirdQueue = [&]() {
+    birdQueue.clear();
+    if (levelBirds.size() > 1) {
+      for (size_t i = 1; i < levelBirds.size(); ++i) {
+        size_t birdIndex = (currentBirdIndex + i) % levelBirds.size();
+        sf::Vector2f queuePos(pos_resortera.x - (i * 3.f * BLOCK),
+                              pos_resortera.y + 1.5f * BLOCK);
+        Bird nextBird(levelBirds[birdIndex], queuePos);
+        birdQueue.push_back(nextBird);
+      }
+    }
+  };
+
+  updateBirdQueue();
+
   float deltaTime = 1.0f / 60.0f;
 
   // Used to save the the thrown bird
@@ -449,6 +465,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
         // Move to the next bird
         currentBirdIndex = (currentBirdIndex + 1) % levelBirds.size();
         pajaro.setBirdType(levelBirds[currentBirdIndex]);
+        updateBirdQueue();
       }
 
       // updates the view to follow the bird
@@ -492,6 +509,11 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     }
 
     pajaro.draw(ventana);
+
+    for (const auto &bird : birdQueue) {
+      //bird.sprite.setScale(0.5f, 0.5f); // Make them smaller
+      ventana.draw(bird.sprite);
+    }
 
     // Draw particles
     particles.draw(ventana);
