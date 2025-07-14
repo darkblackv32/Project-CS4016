@@ -17,9 +17,6 @@
 
 #include <SFML/Audio.hpp>
 
-const float TRAJECTORY_STEP = 0.0001f;
-const int MAX_TRAJECTORY_POINTS = 50;
-
 // simulate Box2D physics for trajectory prediction
 std::vector<sf::Vector2f> calculateTrajectory(sf::Vector2f startPos,
                                               sf::Vector2f velocity,
@@ -453,7 +450,8 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
             // Calls m_world->DestroyBody()
             lev->m_physics.DestroyBody(lev->m_targets[i]);
             lev->m_targets.erase(lev->m_targets.begin() + i);
-            lev->target_textures.erase(lev->target_textures.begin() + i);
+            // Fix TODO
+            // lev->target_textures.erase(lev->target_textures.begin() + i);
             deleted = true;
             break;
           }
@@ -470,9 +468,9 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     // update particles
     particles.update(deltaTime);
 
-    // Run simulation
-    lev->run(deltaTime);
     if (pajaro.lanzado) {
+      lev->run(deltaTime);
+
       // Update in sfml
       b2Fixture *fixture = bird_body->GetFixtureList();
       b2Shape::Type shapeType = fixture->GetType();

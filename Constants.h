@@ -23,11 +23,13 @@ const sf::Color DEFAULT_COLOR_OBJ = {0, 0, 0};
 // Box2D works with meters, so we need a scale to convert pixels to meters
 const float SCALE = 30.f;
 const int SPRITE_WIDTH_WITH_PADDING = 250;
-const float EXTRA_IMPULSE_DOWN = 400.0f;
+const float EXTRA_IMPULSE_DOWN = 300.0f;
 const float EXTRA_IMPULSE_RIGHT = 200.0f;
-const float OBJECT_LIFE = 200.0f;
+const float OBJECT_LIFE = 170.0f;
 const float OBJECT_DEFENSE = 20.0f;
 const float TARGET_LIFE = 20.0f;
-const float TARGET_DEFENSE = 5.0f;
+const float TARGET_DEFENSE = 4.0f;
 // 0.1 percent of a impulse is damage
 const float DAMAGE_MULTIPLIER = 0.2f;
+const float TRAJECTORY_STEP = 0.0001f;
+const int MAX_TRAJECTORY_POINTS = 50;
