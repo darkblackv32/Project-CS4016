@@ -493,8 +493,12 @@ void Level::add_efect_bird(b2Body *bird_body) {
   b2Vec2 impulse;
   switch (this->n_level) {
   case 0:
+    impulse = b2Vec2(EXTRA_IMPULSE_RIGHT, 0);
+    bird_body->ApplyLinearImpulseToCenter(impulse, true);
     break;
   case 1:
+    impulse = b2Vec2(EXTRA_IMPULSE_RIGHT, 0);
+    bird_body->ApplyLinearImpulseToCenter(impulse, true);
     break;
   case 2:
     impulse = b2Vec2(EXTRA_IMPULSE_RIGHT, 0);
@@ -763,18 +767,16 @@ Level *return_level(int level) {
 
     texturePaths.clear();
 
+    texturePaths.push_back("./assets/textures/fujimori/olivera.png");
+    texturePaths.push_back("./assets/textures/fujimori/shack.png");
+    texturePaths.push_back("./assets/textures/fujimori/paez.png");
+    texturePaths.push_back("./assets/textures/fujimori/higuchi.png");
 
-      texturePaths.push_back("./assets/textures/fujimori/olivera.png");
-      texturePaths.push_back("./assets/textures/fujimori/shack.png");
-      texturePaths.push_back("./assets/textures/fujimori/paez.png");
-      texturePaths.push_back("./assets/textures/fujimori/higuchi.png");
-
-
-      texturePaths.push_back("./assets/textures/fujimori/vela.png");
-      texturePaths.push_back("./assets/textures/fujimori/pinchi.png");
-      texturePaths.push_back("./assets/textures/fujimori/olivera.png");
-    //for (int i = 0; i < objSizes.size(); ++i) {
-     // texturePaths.push_back("./assets/textures/fujimori/higuchi.png");
+    texturePaths.push_back("./assets/textures/fujimori/vela.png");
+    texturePaths.push_back("./assets/textures/fujimori/pinchi.png");
+    texturePaths.push_back("./assets/textures/fujimori/olivera.png");
+    // for (int i = 0; i < objSizes.size(); ++i) {
+    //  texturePaths.push_back("./assets/textures/fujimori/higuchi.png");
     //}
     l->setTargets(objSizes, objPositions, objColors, texturePaths);
 
@@ -1192,12 +1194,12 @@ Level *return_level(int level) {
 
     texturePaths.clear();
 
-     texturePaths.push_back("./assets/textures/fujimori/vela.png");
-     texturePaths.push_back("./assets/textures/multi/domingo_perez.png");
+    texturePaths.push_back("./assets/textures/fujimori/vela.png");
+    texturePaths.push_back("./assets/textures/multi/domingo_perez.png");
 
-     texturePaths.push_back("./assets/textures/fujimori/shack.png");
-    //for (int i = 0; i < objSizes.size(); ++i) {
-     // texturePaths.push_back("./assets/textures/multi/domingo_perez.png");
+    texturePaths.push_back("./assets/textures/fujimori/shack.png");
+    // for (int i = 0; i < objSizes.size(); ++i) {
+    //  texturePaths.push_back("./assets/textures/multi/domingo_perez.png");
     //}
     l->setTargets(objSizes, objPositions, objColors, texturePaths);
 

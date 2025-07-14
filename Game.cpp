@@ -176,6 +176,9 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   if (!textureDestroy.loadFromFile("assets/textures/particles/dollar.png")) {
     // handle error
   }
+  if (!textureAbility.loadFromFile("assets/textures/particles/trail.png")) {
+    // handle error
+  }
 
   sf::View levelView(sf::FloatRect(0, 0, lev->x_bound, lev->y_bound));
   sf::FloatRect levelBounds(0, 0, lev->x_bound, lev->y_bound);
@@ -450,6 +453,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
             // Calls m_world->DestroyBody()
             lev->m_physics.DestroyBody(lev->m_targets[i]);
             lev->m_targets.erase(lev->m_targets.begin() + i);
+            lev->target_textures.erase(lev->target_textures.begin() + i);
             deleted = true;
             break;
           }
@@ -479,7 +483,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       pajaro.sprite.setPosition(pajaro.figura.getPosition());
       // Add texture
       if (ability) {
-        // particles.emit(pos, 40);
+        particles.emit(pos, 50, textureAbility);
       }
 
       // current position to bird trail (limit trail length)
