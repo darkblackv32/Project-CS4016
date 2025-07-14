@@ -156,6 +156,8 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   std::string backgroundPath;
   switch (level) {
   case 0:
+      backgroundPath = "assets/textures/city4.png";
+      break;
   case 1:
     backgroundPath = "assets/textures/city1.png";
     break;
@@ -180,21 +182,30 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       {static_cast<float>(lev->x_bound), static_cast<float>(lev->y_bound)});
   fondo.setTexture(&backgroundTexture);
 
-  // IMPORTANT
-  // TODO
-  // FIx scaling from the texture. Currently, the texture goes over the circle
-  if (level == 0) {
-    birdType = BirdType::FUJIMORI;
-  } else if (level == 1) {
-    birdType = BirdType::KENJI;
-  } else if (level == 2) {
-    birdType = BirdType::MONTESINOS;
-  } else if (level == 3) {
-    birdType = BirdType::GARCIA;
-  } else {
-    birdType = BirdType::MILEI;
+  // Define character lists for each level
+  std::vector<BirdType> levelBirds;
+  switch (level) {
+  case 0:
+    levelBirds = {BirdType::ACUNA, BirdType::GARCIA, BirdType::CASTILLO};
+    break;
+  case 1:
+    levelBirds = {BirdType::FUJIMORI, BirdType::KENJI, BirdType::MONTESINOS};
+    break;
+  case 2:
+    levelBirds = {BirdType::MILEI};
+    break;
+  case 3:
+    levelBirds = {BirdType::MILEI,   BirdType::FUJIMORI, BirdType::KENJI,
+                  BirdType::MONTESINOS, BirdType::GARCIA,   BirdType::ACUNA,
+                  BirdType::CASTILLO};
+    break;
+  default:
+    levelBirds = {BirdType::MILEI};
+    break;
   }
-  Bird pajaro(birdType, pos_resortera);
+
+  size_t currentBirdIndex = 0;
+  Bird pajaro(levelBirds[currentBirdIndex], pos_resortera);
   Slingshot resortera(pos_resortera);
 
   float deltaTime = 1.0f / 60.0f;
@@ -434,6 +445,10 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
         lev->m_physics.DestroyBody(bird_body);
         // resets the variable
         pajaro.reset();
+
+        // Move to the next bird
+        currentBirdIndex = (currentBirdIndex + 1) % levelBirds.size();
+        pajaro.setBirdType(levelBirds[currentBirdIndex]);
       }
 
       // updates the view to follow the bird
