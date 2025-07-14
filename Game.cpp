@@ -59,6 +59,8 @@ void playBirdSound(BirdType birdType) {
   static sf::SoundBuffer kenjiBuffer;
   static sf::SoundBuffer montesinosBuffer;
   static sf::SoundBuffer garciaBuffer;
+  static sf::SoundBuffer acunaBuffer;
+  static sf::SoundBuffer castilloBuffer;
   static bool buffersLoaded = false;
   static sf::Sound sound;
 
@@ -84,6 +86,14 @@ void playBirdSound(BirdType birdType) {
       std::cerr << "Failed to load audios/alan.ogg" << std::endl;
       loaded = false;
     }
+    if (!acunaBuffer.loadFromFile("assets/audios/acuna.ogg")) {
+      std::cerr << "Failed to load audios/acuna.ogg" << std::endl;
+      loaded = false;
+    }
+    if (!castilloBuffer.loadFromFile("assets/audios/castillo.ogg")) {
+      std::cerr << "Failed to load audios/castillo.ogg" << std::endl;
+      loaded = false;
+    }
     buffersLoaded = loaded;
     if (!loaded)
       return;
@@ -104,6 +114,12 @@ void playBirdSound(BirdType birdType) {
     break;
   case BirdType::GARCIA:
     sound.setBuffer(garciaBuffer);
+    break;
+  case BirdType::ACUNA:
+    sound.setBuffer(acunaBuffer);
+    break;
+  case BirdType::CASTILLO:
+    sound.setBuffer(castilloBuffer);
     break;
   }
 
