@@ -1,5 +1,6 @@
 #include "Game.h"
 
+#include <SFML/Graphics/Texture.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <iostream>
 
@@ -20,7 +21,9 @@ const float TRAJECTORY_STEP = 0.0001f;
 const int MAX_TRAJECTORY_POINTS = 50;
 
 // simulate Box2D physics for trajectory prediction
-std::vector<sf::Vector2f> calculateTrajectory(sf::Vector2f startPos, sf::Vector2f velocity, float timeStep = 1.0f/60.0f) {
+std::vector<sf::Vector2f> calculateTrajectory(sf::Vector2f startPos,
+                                              sf::Vector2f velocity,
+                                              float timeStep = 1.0f / 60.0f) {
   std::vector<sf::Vector2f> trajectory;
 
   b2Vec2 currentPos = pixelsToMeters(startPos);
@@ -161,15 +164,23 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   std::vector<sf::Vector2f> trayectoria;
   std::vector<sf::Vector2f> birdTrail; // Trail of the bird after launch
 
-  Level *lev = return_level(level, width, height);
+  Level *lev = return_level(level);
   if (!lev) {
     return -1;
+  }
+
+  // Load texture for the particles
+  sf::Texture textureDestroy;
+  sf::Texture textureAbility;
+
+  if (!textureDestroy.loadFromFile("assets/textures/particles/dollar.png")) {
+    // handle error
   }
 
   sf::View levelView(sf::FloatRect(0, 0, lev->x_bound, lev->y_bound));
   sf::FloatRect levelBounds(0, 0, lev->x_bound, lev->y_bound);
   sf::Vector2f previousMousePos;
-  sf::Vector2f pos_resortera(150.0f, lev->y_bound - 5.5 * BLOCK);
+  sf::Vector2f pos_resortera(200.0f, lev->y_bound - 5.5 * BLOCK);
   levelView.setCenter(lev->x_bound / 2, lev->y_bound / 2);
   // move represents 0 for the bird and 1 for the camera
   ventana.setView(levelView);
@@ -185,8 +196,8 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   std::string backgroundPath;
   switch (level) {
   case 0:
-      backgroundPath = "assets/textures/city4.png";
-      break;
+    backgroundPath = "assets/textures/city4.png";
+    break;
   case 1:
     backgroundPath = "assets/textures/city1.png";
     break;
@@ -224,7 +235,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     levelBirds = {BirdType::MILEI};
     break;
   case 3:
-    levelBirds = {BirdType::MILEI,   BirdType::FUJIMORI, BirdType::KENJI,
+    levelBirds = {BirdType::MILEI,      BirdType::FUJIMORI, BirdType::KENJI,
                   BirdType::MONTESINOS, BirdType::GARCIA,   BirdType::ACUNA,
                   BirdType::CASTILLO};
     break;
@@ -244,7 +255,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       for (size_t i = 1; i < levelBirds.size(); ++i) {
         size_t birdIndex = (currentBirdIndex + i) % levelBirds.size();
         sf::Vector2f queuePos(pos_resortera.x - (i * 3.f * BLOCK),
-                              pos_resortera.y + 1.5f * BLOCK);
+                              pos_resortera.y + 2.5 * BLOCK);
         Bird nextBird(levelBirds[birdIndex], queuePos);
         birdQueue.push_back(nextBird);
       }
@@ -259,7 +270,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   b2Body *bird_body = nullptr;
 
   // bird's abilty
-  bool used = 0;
+  bool ability = 0;
 
   sf::Font font;
   if (!font.loadFromFile("assets/fonts/arial-font/arial.ttf")) {
@@ -267,13 +278,6 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       throw std::runtime_error("Failed to load fonts");
     }
   }
-
-  /*
-  sf::Text instructionText(
-      "Press 1-3 to change bird: 1=Default, 2=Milei, 3=Fujimori", font, 16);
-  instructionText.setPosition(10, 10);
-  instructionText.setFillColor(sf::Color::Black);
-  */
 
   // Reloj para medir el tiempo delta (deltaTime)
   sf::Clock deltaClock;
@@ -285,25 +289,9 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
         ventana.close();
 
       if (evento.type == sf::Event::KeyPressed) {
-        /*
-        if (evento.key.code == sf::Keyboard::Num2 ||
-            evento.key.code == sf::Keyboard::Numpad2) {
-          pajaro.setBirdType(BirdType::MILEI);
-        } else if (evento.key.code == sf::Keyboard::Num3 ||
-                   evento.key.code == sf::Keyboard::Numpad3) {
-          pajaro.setBirdType(BirdType::FUJIMORI);
-        } else if (evento.key.code == sf::Keyboard::Num4 ||
-                   evento.key.code == sf::Keyboard::Numpad4) {
-          pajaro.setBirdType(BirdType::KENJI);
-        } else if (evento.key.code == sf::Keyboard::Num5 ||
-                   evento.key.code == sf::Keyboard::Numpad5) {
-          pajaro.setBirdType(BirdType::MONTESINOS);
-        } else if (evento.key.code == sf::Keyboard::Num6 ||
-                   evento.key.code == sf::Keyboard::Numpad6) {
-          pajaro.setBirdType(BirdType::GARCIA);
-        } else*/
         if (evento.key.code == sf::Keyboard::Escape) {
-          response = render_pause_menu(ventana);
+          response = render_pause_menu(ventana, fondo, lev, resortera, pajaro,
+                                       birdQueue);
         }
       }
 
@@ -311,11 +299,11 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
           evento.mouseButton.button == sf::Mouse::Left) {
         sf::Vector2f mousePos =
             ventana.mapPixelToCoords(sf::Mouse::getPosition(ventana));
-        if (pajaro.lanzado && used == 0) {
+        if (pajaro.lanzado && ability == 0) {
           // This applies a dwon force making the stop condition of velocity
           // less certain
           lev->add_efect_bird(bird_body);
-          used = 1;
+          ability = 1;
         } else if (pajaro.figura.getGlobalBounds().contains(mousePos) &&
                    !pajaro.lanzado) {
           arrastrando = true;
@@ -323,7 +311,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
               sf::Vector2i(evento.mouseButton.x, evento.mouseButton.y),
               levelView);
           move = 0;
-          used = 0;
+          ability = 0;
         } else if (evento.mouseButton.button == sf::Mouse::Left) {
           arrastrando = true;
           previousMousePos = ventana.mapPixelToCoords(
@@ -391,7 +379,8 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       // trajectory prediction
       sf::Vector2f launchVector = pos_resortera - nuevaPos;
       float launchPower = 0.5f;
-      sf::Vector2f predictedVelocity(launchVector.x * launchPower, launchVector.y * launchPower);
+      sf::Vector2f predictedVelocity(launchVector.x * launchPower,
+                                     launchVector.y * launchPower);
       trayectoria = calculateTrajectory(pos_resortera, predictedVelocity);
 
     } else if (arrastrando && move == 1) {
@@ -420,7 +409,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       // Find the index by searching
       sf::Vector2f destructionPos =
           metersToPixels(bodyToDestroy->GetPosition());
-      particles.emit(destructionPos, 50);
+      particles.emit(destructionPos, 50, textureDestroy);
       bool deleted = false;
       for (size_t i = 0; i < lev->m_bodies.size(); ++i) {
         if (lev->m_bodies[i] == bodyToDestroy) {
@@ -444,7 +433,6 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
         }
       }
       if (!deleted) {
-        std::cout << "Is a target" << std::endl;
         for (size_t i = 0; i < lev->m_targets.size(); ++i) {
           if (lev->m_targets[i] == bodyToDestroy) {
             // 1. Get the user data associated with the body
@@ -470,15 +458,17 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     }
     lev->m_physics.toDestroy.clear();
 
+    if (lev->targets.size() == 0) {
+      response = 0;
+      break;
+    }
+
     // update particles
     particles.update(deltaTime);
 
-    // TODO
-    // Also, when things dissapear, implement particle effects
-
+    // Run simulation
+    lev->run(deltaTime);
     if (pajaro.lanzado) {
-      // Run simulation
-      lev->run(deltaTime);
       // Update in sfml
       b2Fixture *fixture = bird_body->GetFixtureList();
       b2Shape::Type shapeType = fixture->GetType();
@@ -487,6 +477,10 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       pajaro.figura.setPosition(pos);
 
       pajaro.sprite.setPosition(pajaro.figura.getPosition());
+      // Add texture
+      if (ability) {
+        // particles.emit(pos, 40);
+      }
 
       // current position to bird trail (limit trail length)
       birdTrail.push_back(pos);
@@ -496,8 +490,9 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
 
       // Resets when the bird is done
       // Done means out of bounds or too slow. Other way in place of being too
-      // slow could be used, like comparing x number of previous positions and
-      // see the average difference to prevent the reset from being too sudden
+      // slow could be ability, like comparing x number of previous positions
+      // and see the average difference to prevent the reset from being too
+      // sudden
       b2Vec2 velocity = bird_body->GetLinearVelocity();
       if (pajaro.figura.getPosition().x < -100.0f ||
           pajaro.figura.getPosition().x > lev->x_bound + 100.0f ||
@@ -517,16 +512,13 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
         currentBirdIndex = (currentBirdIndex + 1) % levelBirds.size();
         pajaro.setBirdType(levelBirds[currentBirdIndex]);
         updateBirdQueue();
+        ability = 0;
       }
 
       // updates the view to follow the bird
       levelView.setCenter(pajaro.figura.getPosition().x,
                           pajaro.figura.getPosition().y);
       move_view(levelView, levelBounds);
-    }
-
-    if (lev->targets.size() == 0) {
-      break;
     }
 
     ventana.clear();
@@ -548,14 +540,19 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     // Draw trajectory prediction when dragging
     if (arrastrando && !trayectoria.empty() && move == 0) {
       for (size_t i = 0; i < trayectoria.size(); ++i) {
-        float alpha = 200.0f * (1.0f - static_cast<float>(i) / trayectoria.size());
-        float size = 3.0f * (1.0f - static_cast<float>(i) / trayectoria.size() * 0.5f);
+        float alpha =
+            200.0f * (1.0f - static_cast<float>(i) / trayectoria.size());
+        float size =
+            3.0f * (1.0f - static_cast<float>(i) / trayectoria.size() * 0.5f);
 
         sf::CircleShape puntoTrazo(size);
         // Use a bright color for better visibility
-        puntoTrazo.setFillColor(sf::Color(255, 255, 0, static_cast<sf::Uint8>(alpha))); // Yellow
+        puntoTrazo.setFillColor(
+            sf::Color(255, 255, 0, static_cast<sf::Uint8>(alpha))); // Yellow
         puntoTrazo.setOutlineThickness(1.0f);
-        puntoTrazo.setOutlineColor(sf::Color(255, 150, 0, static_cast<sf::Uint8>(alpha * 0.8f))); // Orange outline
+        puntoTrazo.setOutlineColor(
+            sf::Color(255, 150, 0,
+                      static_cast<sf::Uint8>(alpha * 0.8f))); // Orange outline
         puntoTrazo.setOrigin(size, size);
         puntoTrazo.setPosition(trayectoria[i]);
         ventana.draw(puntoTrazo);
@@ -566,11 +563,13 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     if (pajaro.lanzado && !birdTrail.empty()) {
       for (size_t i = 0; i < birdTrail.size(); ++i) {
         float alpha = 150.0f * (static_cast<float>(i) / birdTrail.size());
-        float size = 2.0f * (static_cast<float>(i) / birdTrail.size() * 0.5f + 0.5f);
+        float size =
+            2.0f * (static_cast<float>(i) / birdTrail.size() * 0.5f + 0.5f);
 
         sf::CircleShape trailPoint(size);
         // Use a red color for the trail
-        trailPoint.setFillColor(sf::Color(255, 100, 100, static_cast<sf::Uint8>(alpha))); // Red
+        trailPoint.setFillColor(
+            sf::Color(255, 100, 100, static_cast<sf::Uint8>(alpha))); // Red
         trailPoint.setOrigin(size, size);
         trailPoint.setPosition(birdTrail[i]);
         ventana.draw(trailPoint);
@@ -580,7 +579,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     pajaro.draw(ventana);
 
     for (const auto &bird : birdQueue) {
-      //bird.sprite.setScale(0.5f, 0.5f); // Make them smaller
+      // bird.sprite.setScale(0.5f, 0.5f); // Make them smaller
       ventana.draw(bird.sprite);
     }
 
@@ -592,7 +591,8 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   }
 
   if (response == 0) {
-    response = victory_screen(ventana, fondo, lev, resortera, pajaro);
+    response =
+        victory_screen(ventana, fondo, lev, resortera, pajaro, birdQueue);
   }
 
   delete lev;

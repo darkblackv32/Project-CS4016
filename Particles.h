@@ -2,31 +2,26 @@
 #define PARTICLES_H_
 
 #include <SFML/Graphics.hpp>
+#include <SFML/Graphics/Texture.hpp>
 #include <math.h>
 
 struct Particle {
   sf::Vector2f position;
   sf::Vector2f velocity;
   sf::Color color;
-  float lifetime;        // Remaining time in seconds
-  float maxLifetime;     // Total duration
-  sf::Sprite shape; // Or sf::RectangleShape, sf::Sprite
+  float lifetime;    // Remaining time in seconds
+  float maxLifetime; // Total duration
+  sf::Sprite shape;  // Or sf::RectangleShape, sf::Sprite
 };
 
 // Example ParticleSystem class
 class ParticleSystem {
 public:
   std::vector<Particle> particles;
-  sf::Texture particleTexture; // Optional: if using sprites
 
-  ParticleSystem() {
-    // Load texture if needed
-    if (!particleTexture.loadFromFile("assets/textures/particles/dollar.png")) {
-      // handle error
-    }
-  }
+  ParticleSystem() {}
 
-  void emit(sf::Vector2f position, int count) {
+  void emit(sf::Vector2f position, int count, sf::Texture &particleTexture) {
     for (int i = 0; i < count; ++i) {
       Particle p;
       p.position = position;

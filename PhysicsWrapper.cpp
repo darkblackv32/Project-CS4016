@@ -134,24 +134,20 @@ void PhysicsWrapper::PostSolve(b2Contact *contact,
 
   // Maybe we should remove this and put it in the post solve callback
   // Log para colisiones fuertes
-  if (totalImpulse > 10.0f) {
-    std::cout << "[PostSolve] Colisión fuerte detectada! Impulso: "
-              << totalImpulse << std::endl;
-  }
+  // if (totalImpulse > 10.0f) {
+  // std::cout << "[PostSolve] Colisión fuerte detectada! Impulso: "
+  //           << totalImpulse << std::endl;
+  // }
 
   float damage = totalImpulse * DAMAGE_MULTIPLIER;
   // Ensure both bodies have our custom user data and are dynamic
   if (userDataA && bodyA->GetType() == b2_dynamicBody &&
       userDataA->defense < totalImpulse) {
-    std::cout << "Damage: " << damage << std::endl;
     userDataA->current_life -= damage;
-    std::cout << "Body A hit! Remaining life: " << userDataA->current_life
-              << std::endl;
 
     if (userDataA->current_life <= 0 &&
         std::find(toDestroy.begin(), toDestroy.end(), bodyA) ==
             toDestroy.end()) {
-      std::cout << "Body A destroyed!" << std::endl;
       userDataA->isDestroyed = true;
       this->toDestroy.push_back(bodyA);
     }
@@ -159,15 +155,11 @@ void PhysicsWrapper::PostSolve(b2Contact *contact,
 
   if (userDataB && bodyB->GetType() == b2_dynamicBody &&
       userDataB->defense < totalImpulse) {
-    std::cout << "Damage: " << damage << std::endl;
     userDataB->current_life -= damage;
-    std::cout << "Body B hit! Remaining life: " << userDataB->current_life
-              << std::endl;
 
     if (userDataB->current_life <= 0 &&
         std::find(toDestroy.begin(), toDestroy.end(), bodyB) ==
             toDestroy.end()) {
-      std::cout << "Body B destroyed!" << std::endl;
       userDataB->isDestroyed = true;
       this->toDestroy.push_back(bodyB);
     }

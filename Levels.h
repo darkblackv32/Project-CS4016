@@ -11,15 +11,7 @@
 #include <vector>
 
 // Enum para los tipos de figuras geométricas usando SFML shapes
-enum class SFMLShapeType {
-  RECTANGLE,
-  CIRCLE,
-  TRIANGLE,
-  DIAMOND,
-  HEXAGON,
-  PENTAGON,
-  CUSTOM
-};
+enum class SFMLShapeType { RECTANGLE, CIRCLE, TRIANGLE, HEXAGON, CUSTOM };
 
 struct Level {
   std::vector<std::unique_ptr<sf::Shape>> objects;
@@ -103,7 +95,7 @@ struct LevelPreview {
   sf::Sprite sprite;
 };
 
-Level *return_level(int level, int width, int height);
+Level *return_level(int level);
 LevelPreview get_level_preview(int level);
 
 void test_level(int level);

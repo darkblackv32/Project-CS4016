@@ -1,7 +1,8 @@
 #include "Victory.h"
 
 int victory_screen(sf::RenderWindow &window, sf::RectangleShape &fondo,
-                   Level *lev, Slingshot &resortera, Bird &pajaro) {
+                   Level *lev, Slingshot &resortera, Bird &pajaro,
+                   std::vector<Bird> &birdQueue) {
 
   sf::Font font;
   if (!font.loadFromFile("./assets/fonts/angrybirds-regular.ttf")) {
@@ -137,8 +138,12 @@ int victory_screen(sf::RenderWindow &window, sf::RectangleShape &fondo,
     // level stuff as background
     window.draw(fondo);
     lev->render(window);
-    pajaro.draw(window);
     resortera.draw(window);
+    pajaro.draw(window);
+
+    for (const auto &bird : birdQueue) {
+      window.draw(bird.sprite);
+    }
 
     // Draw elements in the correct order
     window.draw(backgroundRect); // Draw background first

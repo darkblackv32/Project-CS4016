@@ -13,7 +13,7 @@
 int WIDTH = 800;
 int HEIGHT = 600;
 
-Level::Level() : m_physics(b2Vec2(0.0f, 9.8f)) {
+Level::Level() : m_physics(b2Vec2(0.0f, 6.0f)) {
   // Inicializa la gravedad del nivel
 }
 
@@ -25,7 +25,15 @@ std::unique_ptr<sf::Shape> Level::createSFMLShape(SFMLShapeType type,
                                                   const sf::Color &color) {
 
   if (type == SFMLShapeType::CIRCLE) {
-    // TODO
+    b2Fixture *fixture = body->GetFixtureList();
+    sf::Vector2f pos = metersToPixels(body->GetPosition());
+    float angle = body->GetAngle() * 180.f / b2_pi;
+
+    sf::CircleShape circle(fixture->GetShape()->m_radius * SCALE);
+    circle.setOrigin(circle.getRadius(), circle.getRadius());
+    circle.setPosition(pos);
+    circle.setRotation(angle);
+    circle.setFillColor(color);
   } else {
     // Is a polygon
     b2Fixture *fixture = body->GetFixtureList();
@@ -40,8 +48,6 @@ std::unique_ptr<sf::Shape> Level::createSFMLShape(SFMLShapeType type,
       sf::Vector2f point = metersToPixels(polyShape->m_vertices[i]);
       convex.setPoint(i, point);
     }
-    // Check for misalignments
-    // TODO
     convex.setPosition(pos);
     convex.setRotation(angle);
     convex.setFillColor(color);
@@ -85,12 +91,7 @@ b2Body *Level::createBody(SFMLShapeType type, const sf::Vector2f &size,
     temp = createHexagon(positions[0].x, positions[0].y, size.x, dynamic);
     break;
   }
-  case SFMLShapeType::PENTAGON: {
-    // TODO
-    break;
-  }
   case SFMLShapeType::CUSTOM: {
-    // TODO
     temp = createCustom(positions, dynamic);
     break;
   }
@@ -133,7 +134,7 @@ void Level::setObjects(std::vector<sf::Vector2f> &objectSizes,
     if (shape) {
       if (!texturePaths.empty() && i < texturePaths.size()) {
         if (this->object_textures[i].loadFromFile(texturePaths[i])) {
-          std::cout << "Loaded texture for object " << i << std::endl;
+          this->object_textures[i].setRepeated(true);
           shape->setTexture(&this->object_textures[i]);
         }
       }
@@ -377,8 +378,10 @@ void Level::setFloor(std::vector<sf::Vector2f> &objectSizes,
     if (shape) {
       if (!texturePaths.empty() && i < texturePaths.size()) {
         if (this->floor_textures[i].loadFromFile(texturePaths[i])) {
+          this->floor_textures[i].setRepeated(true);
           shape->setTexture(&this->floor_textures[i]);
-          shape->setTextureRect(sf::IntRect(0, 0, objectSizes[i].x, objectSizes[i].y));
+          shape->setTextureRect(
+              sf::IntRect(0, 0, objectSizes[i].x, objectSizes[i].y));
         }
       }
       m_static.push_back(temp_static);
@@ -507,7 +510,7 @@ void Level::add_efect_bird(b2Body *bird_body) {
   }
 }
 
-Level *return_level(int level, int width, int height) {
+Level *return_level(int level) {
   std::vector<sf::Vector2f> objSizes;
   std::vector<std::vector<sf::Vector2f>> objPositions;
   std::vector<sf::Color> objColors;
@@ -592,7 +595,8 @@ Level *return_level(int level, int width, int height) {
     shapeTypes = {SFMLShapeType::RECTANGLE};
     floorTexturePaths.push_back("./assets/textures/material/asphalt.png");
 
-    l->setFloor(objSizes, objPositions, objColors, shapeTypes, floorTexturePaths);
+    l->setFloor(objSizes, objPositions, objColors, shapeTypes,
+                floorTexturePaths);
 
     // We use the same vector for simplicity, It holds the radio
     objSizes = {sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f)};
@@ -733,7 +737,8 @@ Level *return_level(int level, int width, int height) {
     shapeTypes = {SFMLShapeType::RECTANGLE};
 
     floorTexturePaths.push_back("./assets/textures/material/asphalt.png");
-    l->setFloor(objSizes, objPositions, objColors, shapeTypes, floorTexturePaths);
+    l->setFloor(objSizes, objPositions, objColors, shapeTypes,
+                floorTexturePaths);
 
     objSizes = {// inside
                 sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
@@ -953,10 +958,11 @@ Level *return_level(int level, int width, int height) {
                   SFMLShapeType::CUSTOM};
 
     for (int i = 0; i < objSizes.size(); ++i) {
-        floorTexturePaths.push_back("./assets/textures/material/asphalt.png");
+      floorTexturePaths.push_back("./assets/textures/material/asphalt.png");
     }
 
-    l->setFloor(objSizes, objPositions, objColors, shapeTypes, floorTexturePaths);
+    l->setFloor(objSizes, objPositions, objColors, shapeTypes,
+                floorTexturePaths);
 
     objSizes = {
         // inside
@@ -1155,10 +1161,11 @@ Level *return_level(int level, int width, int height) {
                   SFMLShapeType::RECTANGLE, SFMLShapeType::CUSTOM,
                   SFMLShapeType::CUSTOM};
     for (int i = 0; i < objSizes.size(); ++i) {
-        floorTexturePaths.push_back("./assets/textures/material/asphalt.png");
+      floorTexturePaths.push_back("./assets/textures/material/asphalt.png");
     }
 
-    l->setFloor(objSizes, objPositions, objColors, shapeTypes, floorTexturePaths);
+    l->setFloor(objSizes, objPositions, objColors, shapeTypes,
+                floorTexturePaths);
 
     objSizes = {
         sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
@@ -1224,10 +1231,11 @@ Level *return_level(int level, int width, int height) {
     shapeTypes = {SFMLShapeType::RECTANGLE, SFMLShapeType::CUSTOM};
 
     for (int i = 0; i < objSizes.size(); ++i) {
-        floorTexturePaths.push_back("./assets/textures/material/asphalt.png");
+      floorTexturePaths.push_back("./assets/textures/material/asphalt.png");
     }
 
-    l->setFloor(objSizes, objPositions, objColors, shapeTypes, floorTexturePaths);
+    l->setFloor(objSizes, objPositions, objColors, shapeTypes,
+                floorTexturePaths);
 
     objSizes = {
         sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
@@ -1257,7 +1265,7 @@ void test_level(int level) {
   sf::RectangleShape fondo({800.0f, 600.0f});
   fondo.setFillColor({135, 206, 235});
 
-  Level *lev = return_level(0, WIDTH, HEIGHT);
+  Level *lev = return_level(0);
 
   while (ventana.isOpen()) {
     sf::Event evento;

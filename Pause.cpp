@@ -2,7 +2,9 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 
-int render_pause_menu(sf::RenderWindow &ventana) {
+int render_pause_menu(sf::RenderWindow &ventana, sf::RectangleShape &fondo,
+                      Level *lev, Slingshot &resortera, Bird &pajaro,
+                      std::vector<Bird> &birdQueue) {
 
   sf::Font font; // load font
 
@@ -20,7 +22,7 @@ int render_pause_menu(sf::RenderWindow &ventana) {
   float verticalPadding = 20.0f; // Space between buttons
 
   // Crimson color for buttons
-  auto button_color = sf::Color(220, 20, 60);
+  auto button_color = sf::Color(220, 20, 60, 180);
 
   // Box for options - size relative to view, positioned at view center
   // Using viewSize for relative sizing ensures it scales with the view
@@ -154,7 +156,18 @@ int render_pause_menu(sf::RenderWindow &ventana) {
       }
     }
 
-    ventana.clear(sf::Color(50, 50, 150)); // Clear with a blueish background
+    ventana.clear(sf::Color::Black);
+
+    // level stuff as background
+    ventana.draw(fondo);
+    lev->render(ventana);
+    resortera.draw(ventana);
+    pajaro.draw(ventana);
+
+    for (const auto &bird : birdQueue) {
+      ventana.draw(bird.sprite);
+    }
+
     ventana.draw(box);
     ventana.draw(gameTitle);
     ventana.draw(resumeButton);

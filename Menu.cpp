@@ -37,7 +37,7 @@ Menu::Menu(sf::RenderWindow &window, const std::string &title,
 
   title_text_.setFont(font_);
   title_text_.setString(title_);
-  title_text_.setCharacterSize(48);  // Smaller title
+  title_text_.setCharacterSize(48); // Smaller title
   title_text_.setFillColor(sf::Color::White);
   title_text_.setPosition(
       window_size.x / 2 - title_text_.getLocalBounds().width / 2, 20);
@@ -50,7 +50,7 @@ Menu::Menu(sf::RenderWindow &window, const std::string &title,
   button_right_.setTexture(button_texture_right_);
 
   // Smaller button scaling
-  float button_scale = 0.05f;  // Much smaller
+  float button_scale = 0.05f; // Much smaller
   button_left_.setScale(button_scale, button_scale);
   button_right_.setScale(button_scale, button_scale);
 
@@ -114,22 +114,21 @@ void Menu::draw() {
 }
 
 void Menu::nextPage() {
-  std::cout << "Next page - Current: " << current_page_ << " Total levels: " << previews_.size() << std::endl;
   // Simple approach: just cycle through levels one by one
   if (!previews_.empty()) {
-    current_page_ = (current_page_ + 1) % ((previews_.size() + OPTIONS_PER_PAGE - 1) / OPTIONS_PER_PAGE);
+    current_page_ =
+        (current_page_ + 1) %
+        ((previews_.size() + OPTIONS_PER_PAGE - 1) / OPTIONS_PER_PAGE);
     updateOptionPositions();
-    std::cout << "Moved to page: " << current_page_ << std::endl;
   }
 }
 
 void Menu::previousPage() {
-  std::cout << "Previous page - Current: " << current_page_ << std::endl;
   if (!previews_.empty()) {
-    int total_pages = (previews_.size() + OPTIONS_PER_PAGE - 1) / OPTIONS_PER_PAGE;
+    int total_pages =
+        (previews_.size() + OPTIONS_PER_PAGE - 1) / OPTIONS_PER_PAGE;
     current_page_ = (current_page_ - 1 + total_pages) % total_pages;
     updateOptionPositions();
-    std::cout << "Moved to page: " << current_page_ << std::endl;
   }
 }
 
@@ -137,7 +136,8 @@ void Menu::updateOptionPositions() {
   // Center a single level preview with proper sizing
   auto window_size = window_.getSize();
   int start_index = current_page_ * OPTIONS_PER_PAGE;
-  int end_index = std::min(start_index + OPTIONS_PER_PAGE, (int)previews_.size());
+  int end_index =
+      std::min(start_index + OPTIONS_PER_PAGE, (int)previews_.size());
 
   // Hide all previews first
   for (size_t i = 0; i < previews_.size(); ++i) {
@@ -153,26 +153,26 @@ void Menu::updateOptionPositions() {
     float y_pos = window_size.y / 2 - 20;
 
     // Reasonable scale for the preview image (not too big)
-    float scale = 0.8f;  // Moderate scaling
+    float scale = 0.8f; // Moderate scaling
     previews_[i].sprite.setScale(scale, scale);
 
     // Center the sprite by adjusting for its size
     sf::FloatRect bounds = previews_[i].sprite.getLocalBounds();
     previews_[i].sprite.setPosition(x_pos - (bounds.width * scale) / 2,
-                                   y_pos - (bounds.height * scale) / 2);
+                                    y_pos - (bounds.height * scale) / 2);
 
     // Position text below the sprite, centered
     sf::FloatRect textBounds = previews_[i].text.getLocalBounds();
     previews_[i].text.setPosition(x_pos - textBounds.width / 2,
-                                 y_pos + (bounds.height * scale) / 2 + 20);
+                                  y_pos + (bounds.height * scale) / 2 + 20);
 
     sf::FloatRect descBounds = previews_[i].description.getLocalBounds();
-    previews_[i].description.setOrigin(descBounds.left + descBounds.width / 2.0f,
-                                      descBounds.top + descBounds.height / 2.0f);
-    previews_[i].description.setPosition(
-        x_pos, y_pos + (bounds.height * scale) / 2 + 60 + descBounds.height / 2.0f);
-
-    std::cout << "Centered level " << i << " at (" << x_pos << ", " << y_pos << ")" << std::endl;
+    previews_[i].description.setOrigin(
+        descBounds.left + descBounds.width / 2.0f,
+        descBounds.top + descBounds.height / 2.0f);
+    previews_[i].description.setPosition(x_pos,
+                                         y_pos + (bounds.height * scale) / 2 +
+                                             60 + descBounds.height / 2.0f);
   }
 }
 
