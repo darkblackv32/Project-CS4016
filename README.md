@@ -4,7 +4,7 @@ This project is a complete implementation of a 2D game called "Angry Politicians
 
 ## Requirements
 
-* **Linux** Operating System (tested on Ubuntu/Debian).
+* **Linux** Operating System (why? cos we believe in open source, fuck off microsoft).
 * **g++ >= 13** C++ compiler.
 * **SFML >= 2.6** library.
 * `Makefile` build automation tool.
