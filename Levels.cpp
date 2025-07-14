@@ -599,7 +599,7 @@ Level *return_level(int level, int width, int height) {
     objPositions = {
         {sf::Vector2f(START_LEVEL_X + 5.5 * BLOCK, START_LEVEL_Y - BLOCK)}};
     objColors = {{9, 186, 45}};
-    texturePaths.push_back("./assets/textures/milei/kirchner.png");
+    texturePaths.push_back("./assets/textures/multi/peru.png");
 
     l->setTargets(objSizes, objPositions, objColors, texturePaths);
 
@@ -758,7 +758,7 @@ Level *return_level(int level, int width, int height) {
 
     texturePaths.clear();
     for (int i = 0; i < objSizes.size(); ++i) {
-      texturePaths.push_back("./assets/textures/milei/kirchner.png");
+      texturePaths.push_back("./assets/textures/fujimori/olivera.png");
     }
     l->setTargets(objSizes, objPositions, objColors, texturePaths);
 
@@ -1174,7 +1174,7 @@ Level *return_level(int level, int width, int height) {
 
     texturePaths.clear();
     for (int i = 0; i < objSizes.size(); ++i) {
-      texturePaths.push_back("./assets/textures/milei/kirchner.png");
+      texturePaths.push_back("./assets/textures/multi/domingo_perez.png");
     }
     l->setTargets(objSizes, objPositions, objColors, texturePaths);
 
