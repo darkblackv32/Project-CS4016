@@ -27,11 +27,14 @@
             font-size: 17px;
         }
         header {
-            background: linear-gradient(135deg, #a52a2a, #6e1e1e);
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7)), url('portada_clean.jpg');
+            background-size: cover;
+            background-position: center;
             color: var(--light-text-color);
-            padding: 4rem 2rem;
+            padding: 6rem 2rem;
             text-align: center;
             border-bottom: 5px solid var(--primary-color);
+            position: relative;
         }
         header img.logo {
             width: 130px;
@@ -207,7 +210,7 @@
             border-radius: var(--border-radius);
             box-shadow: var(--box-shadow);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
-            cursor: pointer; /* <-- Añadido para indicar que es clickeable */
+            cursor: pointer;
         }
         .gallery-item img:hover {
             transform: scale(1.05);
@@ -215,7 +218,7 @@
         }
         /* ------------------------------ */
 
-        /* --- ESTILOS PARA EL MODAL DE IMAGEN (NUEVO) --- */
+        /* --- ESTILOS PARA EL MODAL DE IMAGEN --- */
         .modal {
             display: none; 
             position: fixed;
@@ -264,10 +267,47 @@
             background-color: var(--primary-color);
             color: var(--light-text-color);
         }
+        footer h4 {
+            color: var(--light-text-color) !important;
+            font-size: 2.5rem;
+            margin: 0 0 2rem 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .email-list {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            align-items: center;
+            padding: 0 1rem;
+        }
         .email-list a {
             color: var(--light-text-color);
             text-decoration: none;
-            margin: 0 1rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-width: 200px;
+            justify-content: center;
+            flex: 1;
+        }
+        .email-list a:before {
+            content: "✉️";
+            font-size: 1.2rem;
+        }
+        .email-list a:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
         blockquote {
             border-left: 5px solid #ccc;
@@ -347,7 +387,7 @@
             
             <h5>Fase 1: Broad Phase (Box2D)</h5>
             <p>
-                Esta es una fase de optimización crucial. Box2D utiliza su estructura de datos altamente optimizada, <code>b2DynamicTree</code>, para identificar de manera muy eficiente (en tiempo O(log n)) todos los pares de objetos cuyas cajas delimitadoras (AABBs) se superponen. Esto genera una lista de "contactos potenciales" que necesitan una verificación más precisa.
+                Esta es una fase de optimización crucial. Box2D utiliza su estructura de datos altamente optimizada, <code>b2DynamicTree</code>, para identificar de manera muy eficiente (en tiempo $O(\log n)$) todos los pares de objetos cuyas cajas delimitadoras (AABBs) se superponen. Esto genera una lista de "contactos potenciales" que necesitan una verificación más precisa.
             </p>
 
             <h5>Fase 2: Narrow Phase (Nuestra Implementación)</h5>
@@ -410,16 +450,31 @@
             <p>Aquí puedes ver algunas capturas de pantalla de "Angry Politicians" en acción, mostrando la interfaz, la jugabilidad y los efectos visuales.</p>
             <div class="gallery-grid">
                 <div class="gallery-item">
-                    <img src="img4.png" alt="Captura de pantalla del juego 1" onclick="openModal(this);">
+                    <img src="img9.png" alt="Captura de pantalla del juego 1" onclick="openModal(this);">
                 </div>
                 <div class="gallery-item">
-                    <img src="img5.png" alt="Captura de pantalla del juego 2" onclick="openModal(this);">
+                    <img src="img10.png" alt="Captura de pantalla del juego 2" onclick="openModal(this);">
                 </div>
                 <div class="gallery-item">
-                     <img src="img6.png" alt="Captura de pantalla del juego 3" onclick="openModal(this);">
+                     <img src="img11.png" alt="Captura de pantalla del juego 3" onclick="openModal(this);">
                 </div>
                 <div class="gallery-item">
-                    <img src="img7.png" alt="Captura de pantalla del juego 4" onclick="openModal(this);">
+                    <img src="img12.png" alt="Captura de pantalla del juego 4" onclick="openModal(this);">
+                </div>
+                <div class="gallery-item">
+                    <img src="img13.png" alt="Captura de pantalla del juego 5" onclick="openModal(this);">
+                </div>
+                <div class="gallery-item">
+                    <img src="img14.png" alt="Captura de pantalla del juego 6" onclick="openModal(this);">
+                </div>
+                <div class="gallery-item">
+                    <img src="img15.png" alt="Captura de pantalla del juego 7" onclick="openModal(this);">
+                </div>
+                <div class="gallery-item">
+                    <img src="img16.png" alt="Captura de pantalla del juego 8" onclick="openModal(this);">
+                </div>
+                <div class="gallery-item">
+                    <img src="img17.png" alt="Captura de pantalla del juego 9" onclick="openModal(this);">
                 </div>
             </div>
         </section>
@@ -433,14 +488,28 @@
 
 
     <footer>
-        <h4>Contacto y Agradecimientos</h4>
+        <h4>Contacto</h4>
         <div class="email-list">
             <a href="mailto:piero.guerrero@utec.edu.pe">Piero Guerrero</a>
             <a href="mailto:diego.quispe.ap@utec.edu.pe">Diego Quispe</a>
             <a href="mailto:angello.soldi@utec.edu.pe">Angelo Soldi</a>
             <a href="mailto:benjamin.soto@utec.edu.pe">Benjamin Soto</a>
         </div>
-        <p>&copy; 2025 - UTEC, Departamento de Ciencias de la Computación</p>
+
+        <div style="margin-top: 2.5rem; padding: 2.5rem 2rem 0; border-top: 1px solid rgba(236, 240, 241, 0.2);">
+            <h4 style="color: var(--light-text-color); font-size: 1.5rem; margin-bottom: 1rem; margin-top: 0;">Agradecimientos y Futuro del Proyecto</h4>
+            <p style="max-width: 800px; margin: 1rem auto; opacity: 0.9;">
+                Queremos extender un agradecimiento especial a nuestro profesor, <strong>Eric Biagioli</strong>, por su invaluable guía y mentoría durante el curso de Computación Gráfica, que fue fundamental para la realización de este proyecto.
+            </p>
+            <p style="max-width: 800px; margin: 1rem auto; opacity: 0.9;">
+                Este proyecto es de código abierto. ¡Cualquier persona interesada en continuar su desarrollo, implementar nuevas características o realizar mejoras es bienvenida a hacerlo! Nos encantaría ver cómo evoluciona.
+            </p>
+            <p style="margin-top: 1.5rem;">
+                <a href="https://github.com/darkblackv32/Project-CS4016" target="_blank" style="background-color: var(--secondary-color); color: var(--light-text-color); padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background-color 0.3s; display: inline-block;">Ver el Repositorio en GitHub 🚀</a>
+            </p>
+        </div>
+
+        <p style="margin-top: 3rem;">&copy; 2025 - UTEC, Departamento de Ciencias de la Computación</p>
     </footer>
 
     <script>
