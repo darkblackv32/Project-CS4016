@@ -355,8 +355,12 @@ void Level::setTargets(std::vector<sf::Vector2f> &objectSizes,
 void Level::setFloor(std::vector<sf::Vector2f> &objectSizes,
                      std::vector<std::vector<sf::Vector2f>> &objectPos,
                      std::vector<sf::Color> &objectColors,
-                     const std::vector<SFMLShapeType> &shapeTypes) {
+                     const std::vector<SFMLShapeType> &shapeTypes,
+                     const std::vector<std::string> &texturePaths) {
   // Assuming good behavior and the 4 vectors are equal
+  if (!texturePaths.empty()) {
+    this->floor_textures.resize(texturePaths.size());
+  }
 
   for (int i = 0; i < objectSizes.size(); i++) {
     // Determinar tipo de shape (por defecto RECTANGLE para el suelo)
@@ -371,6 +375,12 @@ void Level::setFloor(std::vector<sf::Vector2f> &objectSizes,
     // SFML - crear shape apropiado
     auto shape = createSFMLShape(shapeType, temp_static, objectColors[i]);
     if (shape) {
+      if (!texturePaths.empty() && i < texturePaths.size()) {
+        if (this->floor_textures[i].loadFromFile(texturePaths[i])) {
+          shape->setTexture(&this->floor_textures[i]);
+          shape->setTextureRect(sf::IntRect(0, 0, objectSizes[i].x, objectSizes[i].y));
+        }
+      }
       m_static.push_back(temp_static);
       floor.push_back(std::move(shape));
     }
@@ -510,7 +520,7 @@ Level *return_level(int level, int width, int height) {
   int bound_y;
   std::vector<std::string> texturePaths;
   std::vector<std::string> objTexturePaths;
-
+  std::vector<std::string> floorTexturePaths;
   switch (level) {
   case 0: {
     bound_x = 1200;
@@ -580,8 +590,9 @@ Level *return_level(int level, int width, int height) {
     objPositions = {{sf::Vector2f(0.0f, bound_y - 2 * BLOCK)}};
     objColors = {{120, 110, 100}};
     shapeTypes = {SFMLShapeType::RECTANGLE};
+    floorTexturePaths.push_back("./assets/textures/material/asphalt.png");
 
-    l->setFloor(objSizes, objPositions, objColors, shapeTypes);
+    l->setFloor(objSizes, objPositions, objColors, shapeTypes, floorTexturePaths);
 
     // We use the same vector for simplicity, It holds the radio
     objSizes = {sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f)};
@@ -721,7 +732,8 @@ Level *return_level(int level, int width, int height) {
     objColors = {{120, 110, 100}};
     shapeTypes = {SFMLShapeType::RECTANGLE};
 
-    l->setFloor(objSizes, objPositions, objColors, shapeTypes);
+    floorTexturePaths.push_back("./assets/textures/material/asphalt.png");
+    l->setFloor(objSizes, objPositions, objColors, shapeTypes, floorTexturePaths);
 
     objSizes = {// inside
                 sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
@@ -940,7 +952,11 @@ Level *return_level(int level, int width, int height) {
                   SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
                   SFMLShapeType::CUSTOM};
 
-    l->setFloor(objSizes, objPositions, objColors, shapeTypes);
+    for (int i = 0; i < objSizes.size(); ++i) {
+        floorTexturePaths.push_back("./assets/textures/material/asphalt.png");
+    }
+
+    l->setFloor(objSizes, objPositions, objColors, shapeTypes, floorTexturePaths);
 
     objSizes = {
         // inside
@@ -1138,8 +1154,11 @@ Level *return_level(int level, int width, int height) {
     shapeTypes = {SFMLShapeType::RECTANGLE, SFMLShapeType::RECTANGLE,
                   SFMLShapeType::RECTANGLE, SFMLShapeType::CUSTOM,
                   SFMLShapeType::CUSTOM};
+    for (int i = 0; i < objSizes.size(); ++i) {
+        floorTexturePaths.push_back("./assets/textures/material/asphalt.png");
+    }
 
-    l->setFloor(objSizes, objPositions, objColors, shapeTypes);
+    l->setFloor(objSizes, objPositions, objColors, shapeTypes, floorTexturePaths);
 
     objSizes = {
         sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
@@ -1204,7 +1223,11 @@ Level *return_level(int level, int width, int height) {
 
     shapeTypes = {SFMLShapeType::RECTANGLE, SFMLShapeType::CUSTOM};
 
-    l->setFloor(objSizes, objPositions, objColors, shapeTypes);
+    for (int i = 0; i < objSizes.size(); ++i) {
+        floorTexturePaths.push_back("./assets/textures/material/asphalt.png");
+    }
+
+    l->setFloor(objSizes, objPositions, objColors, shapeTypes, floorTexturePaths);
 
     objSizes = {
         sf::Vector2f(BLOCK / 2.0f, BLOCK / 2.0f),
