@@ -65,7 +65,7 @@ LevelPreview get_level_preview(int level) {
     preview.text.setString("Congreso de la Republica");
     preview.description.setString("El congreso ha sido tomado por la DBA,\n"
                                   "ayuda a recuperarlo");
-    imageLoaded = originalImage.loadFromFile("assets/textures/palacio_gobierno.jpg");
+    imageLoaded = originalImage.loadFromFile("assets/textures/level3.png");
     if (!imageLoaded) {
       originalImage.create(imageWidth, imageHeight, sf::Color::Yellow);
     }
