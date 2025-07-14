@@ -13,7 +13,7 @@
 int WIDTH = 800;
 int HEIGHT = 600;
 
-Level::Level() : m_physics(b2Vec2(0.0f, 8.0f)) {
+Level::Level() : m_physics(b2Vec2(0.0f, 9.8f)) {
   // Inicializa la gravedad del nivel
 }
 
