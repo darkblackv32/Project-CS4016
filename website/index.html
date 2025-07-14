@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis Exhaustivo: Angry Politicians</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #c0392b;
+            --background-color: #ecf0f1;
+            --card-bg-color: #ffffff;
+            --text-color: #34495e;
+            --light-text-color: #ecf0f1;
+            --border-radius: 8px;
+            --box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            --code-bg-color: #2d2d2d;
+            --code-text-color: #f8f8f2;
+        }
+        body {
+            font-family: 'Georgia', 'Times New Roman', Times, serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.8;
+            font-size: 17px;
+        }
+        header {
+            background: linear-gradient(135deg, #a52a2a, #6e1e1e);
+            color: var(--light-text-color);
+            padding: 4rem 2rem;
+            text-align: center;
+            border-bottom: 5px solid var(--primary-color);
+        }
+        header img.logo {
+            width: 130px;
+            height: 130px;
+            background-color: white;
+            border-radius: 50%;
+            padding: 5px;
+            border: 4px solid var(--light-text-color);
+            box-shadow: 0 0 25px rgba(0,0,0,0.25);
+        }
+        header h1 {
+            margin: 1rem 0 0.5rem 0;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 4rem;
+            font-weight: 700;
+            text-shadow: 3px 3px 5px rgba(0,0,0,0.3);
+        }
+        header h2 {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            font-weight: 300;
+            font-style: italic;
+            font-size: 1.75rem;
+        }
+        .authors {
+            margin-top: 1.5rem;
+            font-style: italic;
+            opacity: 0.9;
+        }
+        nav {
+            position: sticky;
+            top: 0;
+            background-color: var(--primary-color);
+            padding: 1rem;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        nav ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        nav ul li a {
+            color: var(--light-text-color);
+            text-decoration: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            transition: background-color 0.3s, transform 0.2s;
+            font-weight: 500;
+            font-family: 'Segoe UI', sans-serif;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+        nav ul li a:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            padding: 3rem;
+        }
+        section {
+            background-color: var(--card-bg-color);
+            margin-bottom: 3rem;
+            padding: 3rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+        h3 {
+            font-family: 'Segoe UI', sans-serif;
+            color: var(--secondary-color);
+            border-bottom: 3px solid var(--background-color);
+            padding-bottom: 1rem;
+            font-size: 2.5rem;
+            margin-top: 0;
+        }
+         h4 {
+            font-family: 'Segoe UI', sans-serif;
+            color: var(--primary-color);
+            font-size: 2rem;
+            margin-top: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+        h5 {
+            font-family: 'Segoe UI', sans-serif;
+            color: var(--text-color);
+            font-size: 1.5rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            border-left: 5px solid var(--secondary-color);
+            padding-left: 1rem;
+        }
+        .flex-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3rem;
+            align-items: flex-start;
+        }
+        .flex-item {
+            flex: 1;
+            min-width: 400px;
+        }
+        .flex-item img {
+            max-width: 100%;
+            height: auto;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            border: 1px solid #ddd;
+        }
+        .img-caption {
+            text-align:center;
+            font-style:italic;
+            color: #666;
+            margin-top: 1rem;
+            font-size: 0.9em;
+        }
+        code {
+            background-color: #e8f0fe;
+            color: #333;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            font-size: 0.95em;
+        }
+        pre {
+            background-color: var(--code-bg-color);
+            color: var(--code-text-color);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            overflow-x: auto;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 0.9em;
+            border: 1px solid #444;
+            position: relative;
+        }
+        pre .code-title {
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: var(--secondary-color);
+            color: var(--code-text-color);
+            padding: 2px 10px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        ul {
+            list-style-type: disc;
+            list-style-position: outside;
+            padding-left: 25px;
+        }
+        li {
+            margin-bottom: 1rem;
+        }
+        
+        /* --- ESTILOS PARA LA GALERÍA --- */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer; /* <-- Añadido para indicar que es clickeable */
+        }
+        .gallery-item img:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+        /* ------------------------------ */
+
+        /* --- ESTILOS PARA EL MODAL DE IMAGEN (NUEVO) --- */
+        .modal {
+            display: none; 
+            position: fixed;
+            z-index: 1001; 
+            padding-top: 60px;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.9);
+        }
+        .modal-content {
+            margin: auto;
+            display: block;
+            width: 80%;
+            max-width: 800px;
+            animation-name: zoom;
+            animation-duration: 0.6s;
+        }
+        @keyframes zoom {
+            from {transform:scale(0)}
+            to {transform:scale(1)}
+        }
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .modal-close:hover,
+        .modal-close:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        /* ------------------------------------------- */
+
+
+        footer {
+            text-align: center;
+            padding: 3rem;
+            background-color: var(--primary-color);
+            color: var(--light-text-color);
+        }
+        .email-list a {
+            color: var(--light-text-color);
+            text-decoration: none;
+            margin: 0 1rem;
+        }
+        blockquote {
+            border-left: 5px solid #ccc;
+            margin: 1.5em 10px;
+            padding: 0.5em 10px;
+            font-style: italic;
+        }
+        cite {
+            font-family: sans-serif;
+            font-size: 0.8rem;
+            color: #888;
+            font-style: normal;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Angry Politicians</h1>
+        <h2>Un Análisis Técnico Exhaustivo</h2>
+        <div class="authors">
+            <p>Piero Guerrero, Diego Quispe, Angelo Soldi, Benjamin Soto </p>
+            <p>Facultad de Computación, UTEC</p>
+            <p>14 de julio de 2025</p>
+        </div>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="#introduccion">Introducción</a></li>
+            <li><a href="#fisica">Motor de Física</a></li>
+            <li><a href="#logica">Lógica del Juego</a></li>
+            <li><a href="#mecanicas">Mecánicas</a></li>
+            <li><a href="#galeria">Galería</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+
+        <section id="introduccion">
+            <h3>I. Visión General del Proyecto</h3>
+            <p>
+                Este documento presenta una descripción técnica detallada del juego <strong>Angry Politicians</strong>. El proyecto fue concebido como un ejercicio integral de desarrollo de videojuegos, abarcando desde la creación de un sistema de física de bajo nivel hasta la implementación de la lógica de juego y las interfaces de usuario. Para las tareas de renderizado, gestión de ventanas y manejo de sprites, se utilizó la librería multiplataforma <strong>SFML (Simple and Fast Multimedia Library)</strong>, gracias a su simplicidad y potencia.
+            </p>
+            <h4>Arquitectura General del Sistema</h4>
+            <p>
+                La arquitectura del juego está diseñada de manera modular para separar las distintas responsabilidades y estados del juego. Este diseño se compone de cinco partes fundamentales que gestionan el flujo de la experiencia del usuario.
+            </p>
+            <div class="flex-container">
+                <div class="flex-item">
+                    <img src="img2.png" alt="Diagrama de flujo general" style="max-width: 100%; height: auto; border-radius: var(--border-radius); box-shadow: var(--box-shadow);">
+                    <p class="img-caption">Diagrama de alto nivel que ilustra el flujo entre las distintas pantallas del juego.</p>
+                </div>
+                <div class="flex-item">
+                    <ul>
+                        <li><strong>Título:</strong> Es la puerta de entrada al juego. Ofrece al jugador las opciones de iniciar una nueva partida (cargando el nivel por defecto), navegar a la pantalla de selección de nivel o cerrar la aplicación. </li>
+                        <li><strong>Selección de Nivel:</strong> Este menú presenta los niveles disponibles a través de un sistema de páginas. El jugador puede navegar entre ellas usando flechas y, una vez que selecciona un nivel, el juego procede a cargarlo. </li>
+                        <li><strong>Bucle del Juego:</strong> El núcleo interactivo donde se desarrolla la acción principal.</li>
+                        <li><strong>Menú de Pausa:</strong> Accesible durante el juego, permite reanudar la partida, reiniciarla o volver al menú principal.</li>
+                        <li><strong>Menú de Victoria:</strong> Se muestra al eliminar a todos los objetivos de un nivel. Ofrece la opción de reiniciar el nivel para mejorar la puntuación o salir.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="fisica">
+            <h3>II. El Núcleo Técnico: Motor de Física Personalizado</h3>
+            <p>
+                La innovación técnica más significativa de "Angry Politicians" reside en su sistema de física. En lugar de utilizar Box2D de manera convencional, optamos por desarrollar un <strong>wrapper</strong> o capa de abstracción. Este wrapper nos otorga un control total sobre el proceso de detección de colisiones, permitiéndonos reemplazar la <em>narrow phase</em> de Box2D por nuestra propia implementación del <strong>Teorema del Eje Separador (SAT)</strong>.
+            </p>
+            
+            <h4>Análisis Detallado del Pipeline de Física</h4>
+            <p>
+                El ciclo de vida de la simulación física en cada frame (una llamada a <code>m_world->Step()</code>) se divide en un pipeline híbrido de seis fases, que combina la robustez de Box2D con la especificidad de nuestro código.
+            </p>
+             <img src="img3.png" alt="Pipeline de física" style="display:block; margin: 2rem auto; max-width: 60%;">
+            
+            <h5>Fase 1: Broad Phase (Box2D)</h5>
+            <p>
+                Esta es una fase de optimización crucial. Box2D utiliza su estructura de datos altamente optimizada, <code>b2DynamicTree</code>, para identificar de manera muy eficiente (en tiempo O(log n)) todos los pares de objetos cuyas cajas delimitadoras (AABBs) se superponen. Esto genera una lista de "contactos potenciales" que necesitan una verificación más precisa.
+            </p>
+
+            <h5>Fase 2: Narrow Phase (Nuestra Implementación)</h5>
+            <p>
+                Aquí es donde nuestra lógica personalizada toma el control. Dentro del callback <code>PreSolve</code>, que Box2D llama para cada contacto potencial, deshabilitamos temporalmente el contacto y ejecutamos nuestro propio chequeo de colisión. Este chequeo se basa en el algoritmo SAT para polígonos y en cálculos de distancia para círculos. Basado en el resultado, decidimos si el contacto es real (y por lo tanto, lo volvemos a habilitar) o si debe ser ignorado.
+            </p>
+
+
+            <h5>Fases 3 y 5: Solver e Integration (Box2D)</h5>
+            <p>
+                Una vez que nuestra Narrow Phase ha filtrado los contactos, el <strong>Solver</strong> de Box2D se encarga de procesar los contactos que quedaron habilitados. Calcula los impulsos de separación, resuelve las penetraciones y aplica las fuerzas de fricción y restitución. Posteriormente, la fase de <strong>Integration</strong> utiliza estos resultados para actualizar las velocidades y posiciones de todos los cuerpos en el mundo.
+            </p>
+
+            <h5>Fases 4 y 6: Post-Solve y Cleanup (Nuestra Implementación)</h5>
+            <p>
+                Después de que el Solver ha hecho su trabajo, nuestro callback <code>PostSolve</code> se activa. Este es el punto de conexión clave con la jugabilidad. Aquí, podemos acceder al impulso que se aplicó en la colisión y usarlo para implementar mecánicas como el daño a los objetos. Finalmente, en la fase de <strong>Cleanup</strong>, si dos objetos se separan, el evento <code>EndContact</code> nos permite limpiar cualquier dato en caché que hayamos guardado para ese contacto.
+            </p>
+
+
+        </section>
+
+        <section id="logica">
+            <h3>III. Lógica del Juego y Creación de Niveles</h3>
+            <p>La estructura del juego está definida por un diagrama de flujo detallado que gestiona todas las interacciones del usuario y los estados del juego.</p>
+             <img src="img1.png" alt="Diseño específico del juego" style="display:block; margin: 2rem auto; max-width: 90%;">
+            <p class="img-caption">Diagrama de flujo detallado que muestra las decisiones y procesos dentro del juego.</p>
+            
+            <h4>Proceso de Creación de Objetos</h4>
+            <p>Una de las características más importantes de nuestro diseño es que los niveles no están codificados de forma fija (hardcoded). En su lugar, se cargan a partir de datos estructurados, lo que permite una gran flexibilidad. Ofrecemos soporte nativo para figuras como rectángulos, círculos, triángulos y hexágonos, además de la capacidad de crear cualquier polígono simple a partir de una lista de puntos.</p>
+            
+            <h5>Declaración de Nivel en 5 Pasos</h5>
+            <ol>
+                <li><strong>Declaración de Límites:</strong> Cada nivel puede tener un tamaño diferente. Usamos la <code>View</code> de SFML como una cámara para manejar niveles grandes.</li>
+                <li><strong>Declaración de Inicios:</strong> Se definen coordenadas de inicio que sirven como referencia para posicionar objetos en una cuadrícula de "bloques".</li>
+                <li><strong>Seteo de Objetos Dinámicos:</strong> Se definen los valores de los arreglos (<code>objSizes</code>, <code>objPositions</code>, etc.) y se pasan a una función <code>setObjects</code>. Esta función itera y crea tanto el cuerpo físico en Box2D como la figura visible en SFML. A estos cuerpos se les añade información extra como vida y defensa.</li>
+                <li><strong>Seteo de Objetos Estáticos:</strong> Se utiliza el mismo proceso que para los dinámicos, pero los cuerpos se marcan como estáticos (inmóviles), como el suelo o plataformas fijas.</li>
+                <li><strong>Seteo de Objetos Objetivo:</strong> Son los "políticos". Se crean de manera similar pero son siempre círculos y tienen la propiedad de vida. La eliminación de todos ellos es la condición de victoria.</li>
+            </ol>
+        </section>
+        
+        <section id="mecanicas">
+            <h3>IV. Mecánicas Detalladas del Juego</h3>
+            <h4>Sistema de Vida, Defensa y Destrucción</h4>
+            <blockquote>
+                "Dentro de los 'bodies' del mundo físico de Box2D, se añade información extra para determinar cómo se modifica la vida del objeto después de una colisión. Para determinar cuándo a un objeto se le acaba la vida, se modificó el comportamiento del PostSolve, para calcular el daño." 
+            </blockquote>
+            <p>
+                Este sistema es el núcleo de la interactividad. Cada objeto dinámico tiene dos propiedades clave: <strong>vida</strong> y <strong>defensa</strong>. La defensa actúa como un umbral de daño: si un impacto genera un impulso inferior al valor de defensa del objeto, este no sufre daño. Si el impulso es superior, el daño se calcula como el impulso total multiplicado por un factor, y se resta de la vida del objeto.
+            </p>
+
+            <p>La lista <code>toDestroy</code> es procesada de forma segura en el bucle principal del juego para eliminar los cuerpos del mundo físico y de SFML, generando al mismo tiempo los efectos de partículas correspondientes para dar feedback visual al jugador</p>
+            <h4>Habilidad Especial del Pájaro y Sistema de Partículas</h4>
+            <p>
+                Para añadir una capa de estrategia, los pájaros poseen habilidades que el jugador puede activar con un clic durante el vuelo. Estas habilidades otorgan un impulso instantáneo a su velocidad, lo que se traduce en un impacto de mayor fuerza y, por consiguiente, un daño incrementado. Adicionalmente, para mejorar la retroalimentación visual, se implementó un sistema de partículas simple para crear efectos como explosiones o la desaparición de objetos.
+            </p>
+        </section>
+        
+        <section id="galeria">
+            <h3>V. Galería del Juego</h3>
+            <p>Aquí puedes ver algunas capturas de pantalla de "Angry Politicians" en acción, mostrando la interfaz, la jugabilidad y los efectos visuales.</p>
+            <div class="gallery-grid">
+                <div class="gallery-item">
+                    <img src="img4.png" alt="Captura de pantalla del juego 1" onclick="openModal(this);">
+                </div>
+                <div class="gallery-item">
+                    <img src="img5.png" alt="Captura de pantalla del juego 2" onclick="openModal(this);">
+                </div>
+                <div class="gallery-item">
+                     <img src="img6.png" alt="Captura de pantalla del juego 3" onclick="openModal(this);">
+                </div>
+                <div class="gallery-item">
+                    <img src="img7.png" alt="Captura de pantalla del juego 4" onclick="openModal(this);">
+                </div>
+            </div>
+        </section>
+        
+    </div>
+
+    <div id="imageModal" class="modal">
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+        <img class="modal-content" id="modalImage">
+    </div>
+
+
+    <footer>
+        <h4>Contacto y Agradecimientos</h4>
+        <div class="email-list">
+            <a href="mailto:piero.guerrero@utec.edu.pe">Piero Guerrero</a>
+            <a href="mailto:diego.quispe.ap@utec.edu.pe">Diego Quispe</a>
+            <a href="mailto:angello.soldi@utec.edu.pe">Angelo Soldi</a>
+            <a href="mailto:benjamin.soto@utec.edu.pe">Benjamin Soto</a>
+        </div>
+        <p>&copy; 2025 - UTEC, Departamento de Ciencias de la Computación</p>
+    </footer>
+
+    <script>
+        // Obtener los elementos del modal
+        var modal = document.getElementById("imageModal");
+        var modalImg = document.getElementById("modalImage");
+
+        // Función para abrir el modal
+        function openModal(element) {
+            modal.style.display = "block";
+            modalImg.src = element.src;
+        }
+
+        // Función para cerrar el modal
+        function closeModal() {
+            modal.style.display = "none";
+        }
+
+        // Cerrar el modal si se hace clic fuera de la imagen
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+    </script>
+
+</body>
+</html>
