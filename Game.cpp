@@ -59,6 +59,8 @@ void playBirdSound(BirdType birdType) {
   static sf::SoundBuffer kenjiBuffer;
   static sf::SoundBuffer montesinosBuffer;
   static sf::SoundBuffer garciaBuffer;
+  static sf::SoundBuffer acunaBuffer;
+  static sf::SoundBuffer castilloBuffer;
   static bool buffersLoaded = false;
   static sf::Sound sound;
 
@@ -84,6 +86,14 @@ void playBirdSound(BirdType birdType) {
       std::cerr << "Failed to load audios/alan.ogg" << std::endl;
       loaded = false;
     }
+    if (!acunaBuffer.loadFromFile("assets/audios/acuna.ogg")) {
+      std::cerr << "Failed to load audios/acuna.ogg" << std::endl;
+      loaded = false;
+    }
+    if (!castilloBuffer.loadFromFile("assets/audios/castillo.ogg")) {
+      std::cerr << "Failed to load audios/castillo.ogg" << std::endl;
+      loaded = false;
+    }
     buffersLoaded = loaded;
     if (!loaded)
       return;
@@ -104,6 +114,12 @@ void playBirdSound(BirdType birdType) {
     break;
   case BirdType::GARCIA:
     sound.setBuffer(garciaBuffer);
+    break;
+  case BirdType::ACUNA:
+    sound.setBuffer(acunaBuffer);
+    break;
+  case BirdType::CASTILLO:
+    sound.setBuffer(castilloBuffer);
     break;
   }
 
@@ -140,6 +156,8 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   std::string backgroundPath;
   switch (level) {
   case 0:
+      backgroundPath = "assets/textures/city4.png";
+      break;
   case 1:
     backgroundPath = "assets/textures/city1.png";
     break;
@@ -164,22 +182,47 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       {static_cast<float>(lev->x_bound), static_cast<float>(lev->y_bound)});
   fondo.setTexture(&backgroundTexture);
 
-  // IMPORTANT
-  // TODO
-  // FIx scaling from the texture. Currently, the texture goes over the circle
-  if (level == 0) {
-    birdType = BirdType::FUJIMORI;
-  } else if (level == 1) {
-    birdType = BirdType::KENJI;
-  } else if (level == 2) {
-    birdType = BirdType::MONTESINOS;
-  } else if (level == 3) {
-    birdType = BirdType::GARCIA;
-  } else {
-    birdType = BirdType::MILEI;
+  // Define character lists for each level
+  std::vector<BirdType> levelBirds;
+  switch (level) {
+  case 0:
+    levelBirds = {BirdType::ACUNA, BirdType::GARCIA, BirdType::CASTILLO};
+    break;
+  case 1:
+    levelBirds = {BirdType::FUJIMORI, BirdType::KENJI, BirdType::MONTESINOS};
+    break;
+  case 2:
+    levelBirds = {BirdType::MILEI};
+    break;
+  case 3:
+    levelBirds = {BirdType::MILEI,   BirdType::FUJIMORI, BirdType::KENJI,
+                  BirdType::MONTESINOS, BirdType::GARCIA,   BirdType::ACUNA,
+                  BirdType::CASTILLO};
+    break;
+  default:
+    levelBirds = {BirdType::MILEI};
+    break;
   }
-  Bird pajaro(birdType, pos_resortera);
+
+  size_t currentBirdIndex = 0;
+  Bird pajaro(levelBirds[currentBirdIndex], pos_resortera);
   Slingshot resortera(pos_resortera);
+
+  std::vector<Bird> birdQueue;
+  auto updateBirdQueue = [&]() {
+    birdQueue.clear();
+    if (levelBirds.size() > 1) {
+      for (size_t i = 1; i < levelBirds.size(); ++i) {
+        size_t birdIndex = (currentBirdIndex + i) % levelBirds.size();
+        sf::Vector2f queuePos(pos_resortera.x - (i * 3.f * BLOCK),
+                              pos_resortera.y + 1.5f * BLOCK);
+        Bird nextBird(levelBirds[birdIndex], queuePos);
+        birdQueue.push_back(nextBird);
+      }
+    }
+  };
+
+  updateBirdQueue();
 
   float deltaTime = 1.0f / 60.0f;
 
@@ -418,6 +461,11 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
         lev->m_physics.DestroyBody(bird_body);
         // resets the variable
         pajaro.reset();
+
+        // Move to the next bird
+        currentBirdIndex = (currentBirdIndex + 1) % levelBirds.size();
+        pajaro.setBirdType(levelBirds[currentBirdIndex]);
+        updateBirdQueue();
       }
 
       // updates the view to follow the bird
@@ -461,6 +509,11 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     }
 
     pajaro.draw(ventana);
+
+    for (const auto &bird : birdQueue) {
+      //bird.sprite.setScale(0.5f, 0.5f); // Make them smaller
+      ventana.draw(bird.sprite);
+    }
 
     // Draw particles
     particles.draw(ventana);

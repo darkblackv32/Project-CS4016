@@ -27,6 +27,7 @@ struct Level {
   std::vector<sf::Texture> target_textures;
   std::vector<sf::CircleShape> targets;
   std::vector<std::unique_ptr<sf::Shape>> floor;
+  std::vector<sf::Texture> floor_textures;
 
   std::vector<b2Body *> m_bodies;
   std::vector<b2Body *> m_targets;
@@ -59,7 +60,8 @@ struct Level {
   void setFloor(std::vector<sf::Vector2f> &objectSizes,
                 std::vector<std::vector<sf::Vector2f>> &objectPos,
                 std::vector<sf::Color> &objectColors,
-                const std::vector<SFMLShapeType> &shapeTypes = {});
+                const std::vector<SFMLShapeType> &shapeTypes = {},
+                const std::vector<std::string> &texturePaths = {});
 
   void setStarts(float x, float y);
   void setNLevel(int n);

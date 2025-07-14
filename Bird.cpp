@@ -46,6 +46,14 @@ void Bird::loadTextures() {
     idlePath = "assets/textures/multi/alan1.png";
     flyingPath = "assets/textures/multi/alan2.png";
     break;
+  case BirdType::ACUNA:
+    idlePath = "assets/textures/multi/acuna1.png";
+    flyingPath = "assets/textures/multi/acuna2.png";
+    break;
+  case BirdType::CASTILLO:
+    idlePath = "assets/textures/multi/castillo1.png";
+    flyingPath = "assets/textures/multi/castillo2.png";
+    break;
   }
 
   auto &entry = BirdTextureCache::cache[type];
