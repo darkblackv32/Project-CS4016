@@ -17,6 +17,34 @@
 #include <SFML/Audio.hpp>
 
 const float TRAJECTORY_STEP = 0.0001f;
+const int MAX_TRAJECTORY_POINTS = 50;
+
+// simulate Box2D physics for trajectory prediction
+std::vector<sf::Vector2f> calculateTrajectory(sf::Vector2f startPos, sf::Vector2f velocity, float timeStep = 1.0f/60.0f) {
+  std::vector<sf::Vector2f> trajectory;
+
+  b2Vec2 currentPos = pixelsToMeters(startPos);
+  b2Vec2 currentVel(velocity.x, velocity.y);
+
+  b2Vec2 gravity(0.0f, 9.8f);
+
+  for (int i = 0; i < MAX_TRAJECTORY_POINTS; ++i) {
+    sf::Vector2f pixelPos = metersToPixels(currentPos);
+    trajectory.push_back(pixelPos);
+
+    currentVel.x += gravity.x * timeStep;
+    currentVel.y += gravity.y * timeStep;
+
+    currentPos.x += currentVel.x * timeStep;
+    currentPos.y += currentVel.y * timeStep;
+    sf::Vector2f checkPos = metersToPixels(currentPos);
+    if (checkPos.y > startPos.y + 800.0f || checkPos.x > startPos.x + 1500.0f) {
+      break;
+    }
+  }
+
+  return trajectory;
+}
 
 void move_view(sf::View &levelView, sf::FloatRect &levelBounds) {
 
@@ -131,6 +159,7 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
   bool arrastrando = false;
   sf::Vector2f clickOffset;
   std::vector<sf::Vector2f> trayectoria;
+  std::vector<sf::Vector2f> birdTrail; // Trail of the bird after launch
 
   Level *lev = return_level(level, width, height);
   if (!lev) {
@@ -320,6 +349,10 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
           bird_body->SetLinearVelocity(b2Vec2(launchVector.x * launchPower,
                                               launchVector.y * launchPower));
 
+          // trajectory and initialize bird trail
+          trayectoria.clear();
+          birdTrail.clear();
+
           // Create texture
           pajaro.updateTextureState();
 
@@ -355,6 +388,12 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
         pajaro.sprite.setPosition(nuevaPos);
       }
 
+      // trajectory prediction
+      sf::Vector2f launchVector = pos_resortera - nuevaPos;
+      float launchPower = 0.5f;
+      sf::Vector2f predictedVelocity(launchVector.x * launchPower, launchVector.y * launchPower);
+      trayectoria = calculateTrajectory(pos_resortera, predictedVelocity);
+
     } else if (arrastrando && move == 1) {
       sf::Vector2f mousePos =
           ventana.mapPixelToCoords(sf::Mouse::getPosition(ventana), levelView);
@@ -368,6 +407,9 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
       // dragging) We re-map it because the view might have been clamped
       previousMousePos =
           ventana.mapPixelToCoords(sf::Mouse::getPosition(ventana), levelView);
+    } else if (!arrastrando) {
+      // Clear trajectory when not dragging
+      trayectoria.clear();
     }
 
     // Actualizacion de fisica
@@ -446,6 +488,12 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
 
       pajaro.sprite.setPosition(pajaro.figura.getPosition());
 
+      // current position to bird trail (limit trail length)
+      birdTrail.push_back(pos);
+      if (birdTrail.size() > 30) { // Keep only last 30 positions
+        birdTrail.erase(birdTrail.begin());
+      }
+
       // Resets when the bird is done
       // Done means out of bounds or too slow. Other way in place of being too
       // slow could be used, like comparing x number of previous positions and
@@ -461,6 +509,9 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
         lev->m_physics.DestroyBody(bird_body);
         // resets the variable
         pajaro.reset();
+
+        // Clear bird trail
+        birdTrail.clear();
 
         // Move to the next bird
         currentBirdIndex = (currentBirdIndex + 1) % levelBirds.size();
@@ -494,17 +545,35 @@ int render_bird_game(sf::RenderWindow &ventana, int level, int width,
     }
     resortera.draw(ventana);
 
+    // Draw trajectory prediction when dragging
     if (arrastrando && !trayectoria.empty() && move == 0) {
       for (size_t i = 0; i < trayectoria.size(); ++i) {
-        float alpha =
-            120.0f * (1.0f - static_cast<float>(i) / trayectoria.size());
-        float size = 2.5f * (1.0f + i * 0.05f);
+        float alpha = 200.0f * (1.0f - static_cast<float>(i) / trayectoria.size());
+        float size = 3.0f * (1.0f - static_cast<float>(i) / trayectoria.size() * 0.5f);
+
         sf::CircleShape puntoTrazo(size);
-        puntoTrazo.setFillColor(
-            sf::Color(0, 0, 0, static_cast<sf::Uint8>(alpha)));
+        // Use a bright color for better visibility
+        puntoTrazo.setFillColor(sf::Color(255, 255, 0, static_cast<sf::Uint8>(alpha))); // Yellow
+        puntoTrazo.setOutlineThickness(1.0f);
+        puntoTrazo.setOutlineColor(sf::Color(255, 150, 0, static_cast<sf::Uint8>(alpha * 0.8f))); // Orange outline
         puntoTrazo.setOrigin(size, size);
         puntoTrazo.setPosition(trayectoria[i]);
         ventana.draw(puntoTrazo);
+      }
+    }
+
+    // Draw bird trail after launch
+    if (pajaro.lanzado && !birdTrail.empty()) {
+      for (size_t i = 0; i < birdTrail.size(); ++i) {
+        float alpha = 150.0f * (static_cast<float>(i) / birdTrail.size());
+        float size = 2.0f * (static_cast<float>(i) / birdTrail.size() * 0.5f + 0.5f);
+
+        sf::CircleShape trailPoint(size);
+        // Use a red color for the trail
+        trailPoint.setFillColor(sf::Color(255, 100, 100, static_cast<sf::Uint8>(alpha))); // Red
+        trailPoint.setOrigin(size, size);
+        trailPoint.setPosition(birdTrail[i]);
+        ventana.draw(trailPoint);
       }
     }
 
