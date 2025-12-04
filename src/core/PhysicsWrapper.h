@@ -67,9 +67,6 @@ public:
   void QueryAABB(const b2AABB &aabb, std::vector<b2Fixture *> &fixtures);
   bool RayCast(const b2Vec2 &start, const b2Vec2 &end, b2RayCastOutput &output,
                b2Fixture **hitFixture = nullptr);
-  // to delete after the step in update
-  // Should move to private, however we need to use it in the game loop to
-  // remove the sfml objects
   std::vector<b2Body *> toDestroy;
 
 protected:
@@ -104,7 +101,7 @@ public:
 
   bool ReportFixture(b2Fixture *fixture) override {
     fixtures->push_back(fixture);
-    return true; // Continuar la query
+    return true; 
   }
 };
 
@@ -127,7 +124,6 @@ public:
   }
 };
 
-// For objects to have life
 struct bodyLife {
   float current_life;
   float defense;

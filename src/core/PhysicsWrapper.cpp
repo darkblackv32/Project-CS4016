@@ -10,7 +10,6 @@ PhysicsWrapper::PhysicsWrapper(const b2Vec2 &gravity)
   m_world = std::make_unique<b2World>(gravity);
   m_world->SetContactListener(this);
 
-  // Configuración adicional del mundo
   m_world->SetAllowSleeping(true);
   m_world->SetContinuousPhysics(true);
 }
@@ -22,22 +21,18 @@ void PhysicsWrapper::Update(float deltaTime) {
 
   m_world->Step(deltaTime, m_velocityIterations, m_positionIterations);
 
-  // Opcional: limpiar cuerpos marcados para destrucción
-  // (si implementas un sistema de destrucción diferida)
-  // Done outside to also delete the sfml objects
+
 }
 
 void PhysicsWrapper::BeginContact(b2Contact *contact) {
   b2Fixture *fixtureA = contact->GetFixtureA();
   b2Fixture *fixtureB = contact->GetFixtureB();
 
-  // Log para debugging
   if (m_useCustomDetection) {
     // std::cout << "[BeginContact] Contacto iniciado entre fixtures" <<
     // std::endl;
   }
 
-  // Llamar callback si está configurado
   if (m_beginContactCallback) {
     m_beginContactCallback(fixtureA, fixtureB);
   }
@@ -47,18 +42,15 @@ void PhysicsWrapper::EndContact(b2Contact *contact) {
   b2Fixture *fixtureA = contact->GetFixtureA();
   b2Fixture *fixtureB = contact->GetFixtureB();
 
-  // Log para debugging
   if (m_useCustomDetection) {
     // std::cout << "[EndContact] Contacto terminado entre fixtures" <<
     // std::endl;
   }
 
-  // Llamar callback si está configurado
   if (m_endContactCallback) {
     m_endContactCallback(fixtureA, fixtureB);
   }
 
-  // Limpiar del cache si existe
   m_contactCache.erase(contact);
 }
 
@@ -118,29 +110,18 @@ void PhysicsWrapper::PostSolve(b2Contact *contact,
   b2Fixture *fixtureA = contact->GetFixtureA();
   b2Fixture *fixtureB = contact->GetFixtureB();
 
-  // get bodies associated with the fixture
   b2Body *bodyA = fixtureA->GetBody();
   b2Body *bodyB = fixtureB->GetBody();
 
-  // Retrieve user data (our custom life structure)
   bodyLife *userDataA = static_cast<bodyLife *>(bodyA->GetUserData());
   bodyLife *userDataB = static_cast<bodyLife *>(bodyB->GetUserData());
 
-  // Calcular el impulso total
   float totalImpulse = 0.0f;
   for (int i = 0; i < impulse->count; ++i) {
     totalImpulse += impulse->normalImpulses[i];
   }
 
-  // Maybe we should remove this and put it in the post solve callback
-  // Log para colisiones fuertes
-  // if (totalImpulse > 10.0f) {
-  // std::cout << "[PostSolve] Colisión fuerte detectada! Impulso: "
-  //           << totalImpulse << std::endl;
-  // }
-
   float damage = totalImpulse * DAMAGE_MULTIPLIER;
-  // Ensure both bodies have our custom user data and are dynamic
   if (userDataA && bodyA->GetType() == b2_dynamicBody &&
       userDataA->defense < totalImpulse) {
     userDataA->current_life -= damage;
@@ -248,8 +229,6 @@ ContactInfo PhysicsWrapper::PerformCustomCollisionCheck(
       result.normal = -result.normal;
     }
   } else {
-    // std::cout << "BOX2D" << std::endl;
-    // Para otros tipos de formas (edge, chain), usar detección de Box2D
     result.hasCollision = true;
   }
 

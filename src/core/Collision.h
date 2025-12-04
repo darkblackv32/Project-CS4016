@@ -18,7 +18,6 @@ struct Polygon {
     std::vector<b2Vec2> vertices;
     std::vector<b2Vec2> normals;
 
-    // Constructor helper para calcular las normales automáticamente
     void ComputeNormals() {
         normals.clear();
         size_t count = vertices.size();
@@ -36,7 +35,6 @@ struct Polygon {
         }
     }
 
-    // Obtener el centroide del polígono
     b2Vec2 GetCenter() const {
         b2Vec2 center(0.0f, 0.0f);
         for (const auto& v : vertices) {
@@ -50,7 +48,7 @@ struct ContactInfo {
     bool hasCollision = false;
     b2Vec2 normal = b2Vec2_zero;
     float depth = 0.0f;
-    b2Vec2 contactPoint = b2Vec2_zero; // Punto de contacto opcional
+    b2Vec2 contactPoint = b2Vec2_zero; 
 };
 
 namespace Collision {
