@@ -1,0 +1,17 @@
+services:
+  angry-politicians:
+    build: .
+    container_name: angry-politicians
+    environment:
+      - DISPLAY=${DISPLAY}
+      - PULSE_SERVER=unix:/run/user/1000/pulse/native
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /run/user/1000/pulse:/run/user/1000/pulse
+      - ${HOME}/.config/pulse/cookie:/root/.config/pulse/cookie:ro
+    devices:
+      - /dev/snd
+    restart: "no"
+
+
+

@@ -8,8 +8,8 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
-
-struct ContactInfo;
+#include <Collision.h>
+//struct ContactInfo;
 
 class PhysicsWrapper : public b2ContactListener {
 public:
